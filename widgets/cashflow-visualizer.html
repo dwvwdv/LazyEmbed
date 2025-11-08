@@ -489,19 +489,19 @@
             chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: outerLabels,
+                    labels: [...outerLabels, ...innerLabels],
                     datasets: [
                         {
-                            label: '內圈',
-                            data: innerData,
-                            backgroundColor: innerColors,
+                            label: '外圈 - 收入來源',
+                            data: outerData,
+                            backgroundColor: outerColors,
                             borderWidth: 2,
                             borderColor: '#fff'
                         },
                         {
-                            label: '外圈',
-                            data: outerData,
-                            backgroundColor: outerColors,
+                            label: '內圈 - 支出分配',
+                            data: innerData,
+                            backgroundColor: innerColors,
                             borderWidth: 2,
                             borderColor: '#fff'
                         }
