@@ -489,7 +489,6 @@
             chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: [...outerLabels, ...innerLabels],
                     datasets: [
                         {
                             label: '外圈 - 收入來源',
@@ -517,14 +516,49 @@
                                 padding: 15,
                                 font: {
                                     size: 12
+                                },
+                                generateLabels: function(chart) {
+                                    const datasets = chart.data.datasets;
+                                    const labels = [];
+
+                                    // 外圈標籤（收入，綠色）
+                                    datasets[0].data.forEach((value, i) => {
+                                        labels.push({
+                                            text: outerLabels[i],
+                                            fillStyle: outerColors[i],
+                                            hidden: false,
+                                            index: i,
+                                            datasetIndex: 0
+                                        });
+                                    });
+
+                                    // 內圈標籤（費用+剩餘，紅色+橘色）
+                                    datasets[1].data.forEach((value, i) => {
+                                        labels.push({
+                                            text: innerLabels[i],
+                                            fillStyle: innerColors[i],
+                                            hidden: false,
+                                            index: i,
+                                            datasetIndex: 1
+                                        });
+                                    });
+
+                                    return labels;
                                 }
                             }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const label = context.label || '';
+                                    const datasetIndex = context.datasetIndex;
+                                    const index = context.dataIndex;
                                     const value = context.parsed || 0;
+
+                                    // 根據 dataset 索引選擇正確的標籤
+                                    const label = datasetIndex === 0
+                                        ? outerLabels[index]
+                                        : innerLabels[index];
+
                                     return `${label}: $${value.toLocaleString()}`;
                                 }
                             }
