@@ -451,10 +451,19 @@
                 innerColors.push('rgba(245, 158, 11, 0.8)');
             }
 
-            // 準備外圈資料（費用細項 + 剩餘）
+            // 準備外圈資料（收入細項 + 費用細項）
             const outerData = [];
             const outerLabels = [];
             const outerColors = [];
+
+            // 收入細項顏色（綠色系）
+            const incomeColors = [
+                'rgba(16, 185, 129, 0.9)',
+                'rgba(5, 150, 105, 0.9)',
+                'rgba(4, 120, 87, 0.9)',
+                'rgba(6, 95, 70, 0.9)',
+                'rgba(6, 78, 59, 0.9)'
+            ];
 
             // 費用細項顏色（紅色系）
             const expenseColors = [
@@ -465,6 +474,14 @@
                 'rgba(127, 29, 29, 0.9)'
             ];
 
+            // 加入收入細項（每個都是相對於收入總額的百分比）
+            data.income.forEach((item, index) => {
+                const percentage = (item.amount / totalIncome * 100).toFixed(1);
+                outerData.push(item.amount);
+                outerLabels.push(`${item.name} ${percentage}%`);
+                outerColors.push(incomeColors[index % incomeColors.length]);
+            });
+
             // 加入費用細項（每個都是相對於收入總額的百分比）
             data.expense.forEach((item, index) => {
                 const percentage = (item.amount / totalIncome * 100).toFixed(1);
@@ -472,14 +489,6 @@
                 outerLabels.push(`${item.name} ${percentage}%`);
                 outerColors.push(expenseColors[index % expenseColors.length]);
             });
-
-            // 加入剩餘
-            if (remaining > 0) {
-                const percentage = (remaining / totalIncome * 100).toFixed(1);
-                outerData.push(remaining);
-                outerLabels.push(`剩餘 ${percentage}%`);
-                outerColors.push('rgba(245, 158, 11, 0.9)');
-            }
 
             // 創建圖表
             chart = new Chart(ctx, {
