@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天氣小工具範例</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .weather-widget {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-width: 320px;
+        }
+
+        .weather-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .city-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .date {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1rem;
+            color: white;
+        }
+
+        .temperature {
+            font-size: 3.5rem;
+            font-weight: 700;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .weather-description {
+            text-align: center;
+            font-size: 1.125rem;
+            color: white;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-widget">
+        <div class="weather-header">
+            <div class="city-name">台北市</div>
+            <div class="date" id="date"></div>
+        </div>
+
+        <div class="weather-main">
+            <div class="temperature">25°</div>
+            <div>
+                <div class="weather-icon">☀️</div>
+                <div class="weather-description">晴天</div>
+            </div>
+        </div>
+
+        <div class="weather-details">
+            <div class="detail-item">
+                <div class="detail-label">濕度</div>
+                <div class="detail-value">65%</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">風速</div>
+                <div class="detail-value">12 km/h</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">紫外線</div>
+                <div class="detail-value">中等</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">能見度</div>
+                <div class="detail-value">10 km</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新日期
+        function updateDate() {
+            const now = new Date();
+            const options = { month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('date').textContent = now.toLocaleDateString('zh-TW', options);
+        }
+
+        updateDate();
+    </script>
+</body>
+</html>
