@@ -59,7 +59,26 @@ class WidgetManager {
     // 載入小工具
     loadWidgets() {
         const stored = localStorage.getItem('lazyEmbedWidgets');
-        return stored ? JSON.parse(stored) : [];
+        if (stored) {
+            return JSON.parse(stored);
+        } else {
+            // 首次使用，添加預設的資金流可視化小工具
+            const defaultWidgets = [
+                {
+                    id: 'widget_default_cashflow',
+                    name: '資金流可視化',
+                    type: 'custom',
+                    description: '雙層圓餅圖顯示收支狀況，支援 URL 參數嵌入',
+                    code: 'widgets/cashflow-visualizer.html',
+                    width: '100%',
+                    height: '800px',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            // 儲存預設小工具
+            localStorage.setItem('lazyEmbedWidgets', JSON.stringify(defaultWidgets));
+            return defaultWidgets;
+        }
     }
 
     // 儲存小工具到 localStorage
@@ -243,6 +262,18 @@ class WidgetManager {
 </div>`;
 
             case 'custom':
+                // 如果是 .html 文件路徑，使用 iframe
+                if (widget.code.endsWith('.html')) {
+                    return `<!-- ${widget.name} -->
+<iframe
+    src="${widget.code}"
+    width="${width}"
+    height="${height}"
+    frameborder="0"
+    allowfullscreen>
+</iframe>`;
+                }
+                // 否則作為內嵌代碼
                 return `<!-- ${widget.name} -->
 <div id="widget-${widget.id}" style="width: ${width}; height: ${height};">
     ${widget.code}
