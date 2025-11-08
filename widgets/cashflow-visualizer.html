@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資金流可視化</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 500px;
+            height: 500px;
+            position: relative;
+        }
+
+        .data-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .form-section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+
+        .form-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 40px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-row select,
+        .form-row input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-row select:focus,
+        .form-row input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-remove {
+            width: 32px;
+            height: 32px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-remove:hover {
+            background: #dc2626;
+        }
+
+        .btn-add {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-add:hover {
+            background: #5568d3;
+        }
+
+        .btn-generate {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .btn-generate:hover {
+            opacity: 0.9;
+        }
+
+        .summary-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .summary-section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+
+        .data-list {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .data-list-item {
+            padding: 4px 0;
+            color: #374151;
+        }
+
+        .calculations {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .calc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .calc-item.income {
+            border-left-color: #10b981;
+        }
+
+        .calc-item.expense {
+            border-left-color: #ef4444;
+        }
+
+        .calc-item.remaining {
+            border-left-color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .calc-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .calc-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>資金流可視化</h1>
+            <p>清楚了解您的收支狀況</p>
+        </div>
+
+        <div class="content">
+            <!-- 左側：圖表 -->
+            <div class="chart-section">
+                <div class="chart-container">
+                    <canvas id="cashflowChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 右側：表單與摘要 -->
+            <div class="data-section">
+                <!-- 輸入表單 -->
+                <div class="form-section">
+                    <h2>資料輸入</h2>
+                    <div class="form-rows" id="formRows">
+                        <!-- 動態生成的表單列 -->
+                    </div>
+                    <button class="btn-add" onclick="addRow()">+ 新增項目</button>
+                    <button class="btn-generate" onclick="generateChart()">生成圖表</button>
+                </div>
+
+                <!-- 資料列表與計算結果 -->
+                <div class="summary-section">
+                    <h2>資料摘要</h2>
+                    <div class="data-list" id="dataList">
+                        <div style="color: #9ca3af; text-align: center;">請輸入資料並生成圖表</div>
+                    </div>
+                    <div class="calculations" id="calculations">
+                        <!-- 計算結果 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        let rowCounter = 0;
+
+        // 初始化：新增預設行或從 URL 參數載入
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('data');
+
+            if (dataParam) {
+                // 從 URL 參數載入資料
+                loadFromUrlParam(dataParam);
+            } else {
+                // 新增預設的空白行
+                for (let i = 0; i < 3; i++) {
+                    addRow();
+                }
+            }
+        }
+
+        // 從 URL 參數載入資料
+        function loadFromUrlParam(dataParam) {
+            const rows = dataParam.split('|');
+            rows.forEach(row => {
+                const [type, name, amount] = row.split(',');
+                addRow(type, name, amount);
+            });
+            // 自動生成圖表
+            setTimeout(() => generateChart(), 100);
+        }
+
+        // 新增表單列
+        function addRow(type = '收入', name = '', amount = '') {
+            rowCounter++;
+            const rowId = `row-${rowCounter}`;
+            const formRows = document.getElementById('formRows');
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'form-row';
+            rowDiv.id = rowId;
+            rowDiv.innerHTML = `
+                <select class="row-type">
+                    <option value="收入" ${type === '收入' ? 'selected' : ''}>收入</option>
+                    <option value="費用" ${type === '費用' ? 'selected' : ''}>費用</option>
+                </select>
+                <input type="text" class="row-name" placeholder="項目名稱" value="${name}">
+                <input type="number" class="row-amount" placeholder="金額" value="${amount}" min="0">
+                <button class="btn-remove" onclick="removeRow('${rowId}')">×</button>
+            `;
+
+            formRows.appendChild(rowDiv);
+        }
+
+        // 刪除表單列
+        function removeRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+            }
+        }
+
+        // 收集表單資料
+        function collectData() {
+            const rows = document.querySelectorAll('.form-row');
+            const data = {
+                income: [],
+                expense: []
+            };
+
+            rows.forEach(row => {
+                const type = row.querySelector('.row-type').value;
+                const name = row.querySelector('.row-name').value.trim();
+                const amount = parseFloat(row.querySelector('.row-amount').value) || 0;
+
+                if (name && amount > 0) {
+                    const item = { name, amount };
+                    if (type === '收入') {
+                        data.income.push(item);
+                    } else {
+                        data.expense.push(item);
+                    }
+                }
+            });
+
+            return data;
+        }
+
+        // 生成圖表
+        function generateChart() {
+            const data = collectData();
+
+            // 計算總額
+            const totalIncome = data.income.reduce((sum, item) => sum + item.amount, 0);
+            const totalExpense = data.expense.reduce((sum, item) => sum + item.amount, 0);
+            const remaining = totalIncome - totalExpense;
+
+            if (totalIncome === 0) {
+                alert('請至少輸入一筆收入資料');
+                return;
+            }
+
+            // 更新資料列表
+            updateDataList(data);
+
+            // 更新計算結果
+            updateCalculations(totalIncome, totalExpense, remaining);
+
+            // 繪製圖表
+            drawChart(data, totalIncome, totalExpense, remaining);
+        }
+
+        // 更新資料列表
+        function updateDataList(data) {
+            const dataList = document.getElementById('dataList');
+            let html = '';
+
+            data.income.forEach(item => {
+                html += `<div class="data-list-item">收入,${item.name},${item.amount}</div>`;
+            });
+
+            data.expense.forEach(item => {
+                html += `<div class="data-list-item">費用,${item.name},${item.amount}</div>`;
+            });
+
+            dataList.innerHTML = html || '<div style="color: #9ca3af;">無資料</div>';
+        }
+
+        // 更新計算結果
+        function updateCalculations(totalIncome, totalExpense, remaining) {
+            const calculations = document.getElementById('calculations');
+            calculations.innerHTML = `
+                <div class="calc-item income">
+                    <span class="calc-label">總收入</span>
+                    <span class="calc-value">$${totalIncome.toLocaleString()}</span>
+                </div>
+                <div class="calc-item expense">
+                    <span class="calc-label">總費用</span>
+                    <span class="calc-value">$${totalExpense.toLocaleString()}</span>
+                </div>
+                <div class="calc-item remaining">
+                    <span class="calc-label">剩餘可分配金額</span>
+                    <span class="calc-value">$${remaining.toLocaleString()}</span>
+                </div>
+            `;
+        }
+
+        // 繪製圖表
+        function drawChart(data, totalIncome, totalExpense, remaining) {
+            const ctx = document.getElementById('cashflowChart');
+
+            // 銷毀舊圖表
+            if (chart) {
+                chart.destroy();
+            }
+
+            // 準備內圈資料（費用總額 vs 剩餘）
+            const innerData = [];
+            const innerLabels = [];
+            const innerColors = [];
+
+            if (totalExpense > 0) {
+                innerData.push(totalExpense);
+                innerLabels.push(`費用 ${(totalExpense / totalIncome * 100).toFixed(1)}%`);
+                innerColors.push('rgba(239, 68, 68, 0.8)');
+            }
+
+            if (remaining > 0) {
+                innerData.push(remaining);
+                innerLabels.push(`剩餘 ${(remaining / totalIncome * 100).toFixed(1)}%`);
+                innerColors.push('rgba(16, 185, 129, 0.8)');
+            }
+
+            // 準備外圈資料（費用細項 + 剩餘）
+            const outerData = [];
+            const outerLabels = [];
+            const outerColors = [];
+
+            // 費用細項顏色（紅色系）
+            const expenseColors = [
+                'rgba(239, 68, 68, 0.9)',
+                'rgba(220, 38, 38, 0.9)',
+                'rgba(185, 28, 28, 0.9)',
+                'rgba(153, 27, 27, 0.9)',
+                'rgba(127, 29, 29, 0.9)'
+            ];
+
+            // 加入費用細項（每個都是相對於收入總額的百分比）
+            data.expense.forEach((item, index) => {
+                const percentage = (item.amount / totalIncome * 100).toFixed(1);
+                outerData.push(item.amount);
+                outerLabels.push(`${item.name} ${percentage}%`);
+                outerColors.push(expenseColors[index % expenseColors.length]);
+            });
+
+            // 加入剩餘
+            if (remaining > 0) {
+                const percentage = (remaining / totalIncome * 100).toFixed(1);
+                outerData.push(remaining);
+                outerLabels.push(`剩餘 ${percentage}%`);
+                outerColors.push('rgba(16, 185, 129, 0.9)');
+            }
+
+            // 創建圖表
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: outerLabels,
+                    datasets: [
+                        {
+                            label: '內圈',
+                            data: innerData,
+                            backgroundColor: innerColors,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        },
+                        {
+                            label: '外圈',
+                            data: outerData,
+                            backgroundColor: outerColors,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: $${value.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 頁面載入時初始化
+        init();
+    </script>
+</body>
+</html>
