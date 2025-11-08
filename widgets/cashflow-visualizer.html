@@ -448,7 +448,7 @@
             if (remaining > 0) {
                 innerData.push(remaining);
                 innerLabels.push(`剩餘 ${(remaining / totalIncome * 100).toFixed(1)}%`);
-                innerColors.push('rgba(16, 185, 129, 0.8)');
+                innerColors.push('rgba(245, 158, 11, 0.8)');
             }
 
             // 準備外圈資料（費用細項 + 剩餘）
@@ -478,7 +478,7 @@
                 const percentage = (remaining / totalIncome * 100).toFixed(1);
                 outerData.push(remaining);
                 outerLabels.push(`剩餘 ${percentage}%`);
-                outerColors.push('rgba(16, 185, 129, 0.9)');
+                outerColors.push('rgba(245, 158, 11, 0.9)');
             }
 
             // 創建圖表

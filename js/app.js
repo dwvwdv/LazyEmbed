@@ -100,11 +100,17 @@ class WidgetManager {
         grid.style.display = 'grid';
         emptyState.style.display = 'none';
 
-        grid.innerHTML = this.widgets.map(widget => `
+        grid.innerHTML = this.widgets.map(widget => {
+            // 如果 code 是 .html 文件，標題加上超連結
+            const titleHtml = widget.code.endsWith('.html')
+                ? `<h3><a href="${widget.code}" target="_blank" style="color: inherit; text-decoration: none;">${this.escapeHtml(widget.name)}</a></h3>`
+                : `<h3>${this.escapeHtml(widget.name)}</h3>`;
+
+            return `
             <div class="widget-card" data-id="${widget.id}">
                 <div class="widget-card-header">
                     <div>
-                        <h3>${this.escapeHtml(widget.name)}</h3>
+                        ${titleHtml}
                         <span class="widget-type-badge">${this.getTypeLabel(widget.type)}</span>
                     </div>
                 </div>
@@ -120,7 +126,8 @@ class WidgetManager {
                     <button class="btn btn-delete" onclick="widgetManager.deleteWidget('${widget.id}')">刪除</button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
     // 取得類型標籤
