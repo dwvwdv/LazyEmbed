@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LazyEmbed - 小工具管理平台</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LazyEmbed 小工具管理平台</h1>
+            <p class="subtitle">輕鬆建立和管理您的嵌入式小工具</p>
+        </header>
+
+        <main>
+            <section class="actions">
+                <button id="addWidgetBtn" class="btn btn-primary">+ 新增小工具</button>
+            </section>
+
+            <section class="widgets-list">
+                <h2>我的小工具</h2>
+                <div id="widgetGrid" class="widget-grid">
+                    <!-- 小工具卡片會動態載入 -->
+                </div>
+                <div id="emptyState" class="empty-state">
+                    <p>尚未建立任何小工具</p>
+                    <p class="hint">點擊「新增小工具」按鈕開始建立</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 新增/編輯小工具模態框 -->
+    <div id="widgetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">新增小工具</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="widgetForm">
+                    <div class="form-group">
+                        <label for="widgetName">小工具名稱 *</label>
+                        <input type="text" id="widgetName" required placeholder="例：天氣查詢">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetType">小工具類型 *</label>
+                        <select id="widgetType" required>
+                            <option value="">請選擇類型</option>
+                            <option value="iframe">iFrame 嵌入</option>
+                            <option value="script">JavaScript 腳本</option>
+                            <option value="html">HTML 片段</option>
+                            <option value="custom">自訂小工具</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetDescription">描述</label>
+                        <textarea id="widgetDescription" rows="3" placeholder="簡單描述這個小工具的功能..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetCode">嵌入代碼 *</label>
+                        <textarea id="widgetCode" rows="6" required placeholder="輸入嵌入代碼或 URL..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetWidth">寬度</label>
+                        <input type="text" id="widgetWidth" placeholder="例：100% 或 500px">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetHeight">高度</label>
+                        <input type="text" id="widgetHeight" placeholder="例：400px">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+                        <button type="submit" class="btn btn-primary">儲存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 嵌入代碼模態框 -->
+    <div id="embedModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>嵌入代碼</h2>
+                <button class="close-btn" id="closeEmbedModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="info-text">複製以下代碼並貼到您的網站中：</p>
+                <div class="code-block">
+                    <pre id="embedCode"></pre>
+                    <button class="btn btn-copy" id="copyEmbedBtn">複製代碼</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
