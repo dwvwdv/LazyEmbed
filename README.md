@@ -17,10 +17,13 @@ LazyEmbed 是一個輕量級的靜態網頁專案，用於建立、管理和嵌�
 ```
 LazyEmbed/
 ├── index.html              # 主管理頁面
+├── wrangler.toml          # Cloudflare Workers 配置
 ├── css/
 │   └── style.css          # 樣式檔案
 ├── js/
 │   └── app.js             # 應用程式邏輯
+├── src/
+│   └── worker.js          # Cloudflare Worker 腳本
 ├── widgets/               # 範例小工具
 │   ├── example-clock.html    # 時鐘小工具
 │   ├── example-counter.html  # 計數器小工具
@@ -159,6 +162,48 @@ git push origin main
 
 ```bash
 vercel --prod
+```
+
+### Cloudflare Workers
+
+Cloudflare Workers 提供全球邊緣運算部署，速度快且可靠。
+
+**前置需求**：
+- 安裝 [Node.js](https://nodejs.org/)
+- 安裝 Wrangler CLI: `npm install -g wrangler`
+- 擁有 Cloudflare 帳號
+
+**部署步驟**：
+
+1. 登入 Cloudflare：
+```bash
+wrangler login
+```
+
+2. 部署到 Workers：
+```bash
+wrangler deploy
+```
+
+3. 訪問您的網站：
+```
+https://lazyembed.workers.dev
+```
+
+**自訂域名**：
+
+如果您想使用自己的域名，請編輯 `wrangler.toml` 中的 routes 設定：
+
+```toml
+[env.production]
+routes = [
+  { pattern = "your-domain.com/*", zone_name = "your-domain.com" }
+]
+```
+
+然後重新部署：
+```bash
+wrangler deploy --env production
 ```
 
 ## 自訂樣式
