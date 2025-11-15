@@ -192,19 +192,13 @@ https://lazyembed.workers.dev
 
 **自訂域名**：
 
-如果您想使用自己的域名，請編輯 `wrangler.toml` 中的 routes 設定：
+如果您想使用自己的域名，可以在 Cloudflare Dashboard 中設定：
 
-```toml
-[env.production]
-routes = [
-  { pattern = "your-domain.com/*", zone_name = "your-domain.com" }
-]
-```
-
-然後重新部署：
-```bash
-wrangler deploy --env production
-```
+1. 登入 Cloudflare Dashboard
+2. 進入 Workers & Pages
+3. 選擇您的 Worker (lazyembed)
+4. 點擊 "Settings" > "Triggers"
+5. 添加自訂域名
 
 ## 自訂樣式
 

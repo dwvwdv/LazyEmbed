@@ -6,10 +6,3 @@ main = "src/worker.js"
 [assets]
 directory = "."
 binding = "ASSETS"
-
-# 部署配置
-[env.production]
-name = "lazyembed"
-routes = [
-  { pattern = "lazyembed.workers.dev", zone_name = "" }
-]
