@@ -24,6 +24,9 @@ LazyEmbed/
 │   └── app.js             # 應用程式邏輯
 ├── src/
 │   └── worker.js          # Cloudflare Worker 腳本
+├── docs/                  # 文檔
+│   ├── examples.md        # 範例小工具說明
+│   └── deployment.md      # 部署指南
 ├── widgets/               # 範例小工具
 │   ├── example-clock.html    # 時鐘小工具
 │   ├── example-counter.html  # 計數器小工具
@@ -107,88 +110,20 @@ php -S localhost:8000
 
 ## 範例小工具
 
-專案包含三個範例小工具，位於 `widgets/` 資料夾：
+專案包含三個範例小工具（時鐘、計數器、天氣），展示不同類型的小工具實作。
 
-### 1. 時鐘小工具 (`example-clock.html`)
-
-即時顯示時間和日期的美觀時鐘。
-
-**嵌入方式**：
-```html
-<iframe src="widgets/example-clock.html" width="400" height="300" frameborder="0"></iframe>
-```
-
-### 2. 計數器小工具 (`example-counter.html`)
-
-互動式計數器，支援增加、減少和重置功能。
-
-**嵌入方式**：
-```html
-<iframe src="widgets/example-counter.html" width="400" height="400" frameborder="0"></iframe>
-```
-
-### 3. 天氣小工具 (`example-weather.html`)
-
-展示天氣資訊的美觀卡片（範例資料）。
-
-**嵌入方式**：
-```html
-<iframe src="widgets/example-weather.html" width="400" height="500" frameborder="0"></iframe>
-```
+📖 **詳細資訊請參閱**：[範例小工具文檔](docs/examples.md)
 
 ## 部署
 
-LazyEmbed 是完全靜態的專案，可以部署到任何靜態託管服務：
+LazyEmbed 是完全靜態的專案，可以部署到多種平台：
 
-### GitHub Pages
+- **GitHub Pages** - 免費靜態網站託管
+- **Netlify** - 簡單快速的部署體驗
+- **Vercel** - 全球 CDN 加速
+- **Cloudflare Workers/Pages** - 邊緣運算部署
 
-```bash
-git add .
-git commit -m "Deploy LazyEmbed"
-git push origin main
-```
-
-然後在 GitHub 儲存庫設定中啟用 GitHub Pages。
-
-### Netlify
-
-1. 將專案推送到 Git 儲存庫
-2. 連接到 Netlify
-3. 部署設定：
-   - Build command: (留空)
-   - Publish directory: `.`
-
-### Vercel
-
-```bash
-vercel --prod
-```
-
-### Cloudflare Workers
-
-Cloudflare Workers 提供全球邊緣運算部署，速度快且可靠。
-
-**前置需求**：
-- 安裝 [Node.js](https://nodejs.org/)
-- 安裝 Wrangler CLI: `npm install -g wrangler`
-- 擁有 Cloudflare 帳號
-
-**部署步驟**：
-
-1. 登入 Cloudflare：
-```bash
-wrangler login
-```
-
-2. 部署到 Workers：
-```bash
-wrangler deploy
-```
-
-3. 訪問您的網站：
-```
-https://lazyembed.workers.dev
-```
+📖 **詳細部署指南請參閱**：[部署文檔](docs/deployment.md)
 
 ## 自訂樣式
 
