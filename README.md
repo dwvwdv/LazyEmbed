@@ -190,22 +190,6 @@ wrangler deploy
 https://lazyembed.workers.dev
 ```
 
-**自訂域名**：
-
-如果您想使用自己的域名，請編輯 `wrangler.toml` 中的 routes 設定：
-
-```toml
-[env.production]
-routes = [
-  { pattern = "your-domain.com/*", zone_name = "your-domain.com" }
-]
-```
-
-然後重新部署：
-```bash
-wrangler deploy --env production
-```
-
 ## 自訂樣式
 
 您可以編輯 `css/style.css` 來自訂介面外觀。主要的 CSS 變數位於檔案頂部：
