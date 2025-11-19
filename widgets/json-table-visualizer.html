@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Table Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --background: #e0e5ec;
+            --surface: #e0e5ec;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-color: #cbd5e0;
+
+            /* Neumorphic Shadows */
+            --shadow-light: -8px -8px 16px rgba(255, 255, 255, 0.8);
+            --shadow-dark: 8px 8px 16px rgba(163, 177, 198, 0.6);
+            --shadow-inset-light: inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+            --shadow-inset-dark: inset 4px 4px 8px rgba(163, 177, 198, 0.4);
+            --shadow-lg: -12px -12px 24px rgba(255, 255, 255, 0.8),
+                         12px 12px 24px rgba(163, 177, 198, 0.6);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(163, 177, 198, 0.3);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-light), var(--shadow-dark);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .json-input {
+            width: 100%;
+            min-height: 400px;
+            padding: 1rem;
+            border: none;
+            border-radius: 1rem;
+            background: var(--surface);
+            box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .json-input:focus {
+            outline: none;
+            box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark),
+                        0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light), var(--shadow-dark);
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark);
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #6366f1, #4f46e5);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(145deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(145deg, #718096, #4a5568);
+            color: white;
+        }
+
+        /* Table Section */
+        .table-section {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-light), var(--shadow-dark);
+        }
+
+        /* Breadcrumb Navigation */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark);
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb-item {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-item.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-secondary);
+        }
+
+        /* Table Container */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--surface);
+        }
+
+        thead {
+            background: linear-gradient(145deg, #6366f1, #4f46e5);
+            color: white;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th:first-child {
+            border-top-left-radius: 1rem;
+        }
+
+        th:last-child {
+            border-top-right-radius: 1rem;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(163, 177, 198, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        td {
+            padding: 0.875rem 1rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        /* Object Cell - Special styling for nested objects */
+        .object-cell {
+            cursor: pointer;
+            position: relative;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(145deg, #f59e0b, #d97706);
+            color: white;
+            border-radius: 0.5rem;
+            display: inline-block;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.5),
+                        4px 4px 8px rgba(163, 177, 198, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .object-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: -6px -6px 12px rgba(255, 255, 255, 0.6),
+                        6px 6px 12px rgba(163, 177, 198, 0.5);
+        }
+
+        .object-cell:active {
+            transform: translateY(0);
+            box-shadow: inset -2px -2px 4px rgba(255, 255, 255, 0.5),
+                        inset 2px 2px 4px rgba(163, 177, 198, 0.4);
+        }
+
+        .object-cell::after {
+            content: ' 🔍';
+            margin-left: 0.5rem;
+        }
+
+        .array-cell {
+            background: linear-gradient(145deg, #8b5cf6, #7c3aed);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: linear-gradient(145deg, #fee2e2, #fecaca);
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            box-shadow: var(--shadow-light), var(--shadow-dark);
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Sample Data */
+        .sample-data {
+            margin-top: 1rem;
+        }
+
+        .sample-btn {
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .input-section,
+            .table-section {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Loading Indicator */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Cell Type Indicators */
+        .cell-type {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .type-string { background: #dbeafe; color: #1e40af; }
+        .type-number { background: #d1fae5; color: #065f46; }
+        .type-boolean { background: #fce7f3; color: #9f1239; }
+        .type-null { background: #f3f4f6; color: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>JSON Table Visualizer</h1>
+            <p>將 JSON 資料轉換為可視化表格，支援嵌套物件瀏覽</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-layout">
+            <!-- Input Section -->
+            <div class="input-section">
+                <h2 class="section-title">JSON 輸入</h2>
+                <textarea
+                    id="jsonInput"
+                    class="json-input"
+                    placeholder='輸入 JSON 資料，例如：
+[
+  {
+    "name": "John",
+    "age": 30,
+    "address": {
+      "city": "Taipei",
+      "zip": "100"
+    }
+  }
+]'></textarea>
+                <div class="error-message" id="errorMessage"></div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="parseJSON()">
+                        解析 JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearData()">
+                        清除
+                    </button>
+                </div>
+                <div class="sample-data">
+                    <button class="btn btn-success sample-btn" onclick="loadSampleData()">
+                        載入範例資料
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-section">
+                <h2 class="section-title">資料表格</h2>
+
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb" id="breadcrumb">
+                    <span class="breadcrumb-item active" onclick="navigateToRoot()">根目錄</span>
+                </div>
+
+                <!-- Table Container -->
+                <div class="table-container">
+                    <div class="empty-state" id="emptyState">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                        </svg>
+                        <p>尚無資料，請輸入 JSON 並點擊「解析 JSON」</p>
+                    </div>
+                    <div id="tableContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentData = null;
+        let navigationStack = [];
+        let selectedCell = null;
+
+        // Parse JSON input
+        function parseJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!input) {
+                showError('請輸入 JSON 資料');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(input);
+                currentData = data;
+                navigationStack = [{ data: data, label: '根目錄' }];
+                errorMessage.classList.remove('show');
+                renderTable(data);
+                hideEmptyState();
+            } catch (error) {
+                showError('JSON 格式錯誤: ' + error.message);
+            }
+        }
+
+        // Render table from data
+        function renderTable(data) {
+            const tableContent = document.getElementById('tableContent');
+
+            // Handle different data types
+            if (Array.isArray(data)) {
+                if (data.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+                tableContent.innerHTML = createTableFromArray(data);
+            } else if (typeof data === 'object' && data !== null) {
+                tableContent.innerHTML = createTableFromObject(data);
+            } else {
+                showError('資料必須是陣列或物件');
+                return;
+            }
+
+            // Add keyboard event listener
+            addKeyboardListener();
+        }
+
+        // Create table from array
+        function createTableFromArray(arr) {
+            // Get all unique keys from array objects
+            const keys = new Set();
+            arr.forEach(item => {
+                if (typeof item === 'object' && item !== null) {
+                    Object.keys(item).forEach(key => keys.add(key));
+                }
+            });
+
+            if (keys.size === 0) {
+                return '<p class="empty-state">無法從陣列建立表格</p>';
+            }
+
+            const keysArray = Array.from(keys);
+
+            let html = '<table><thead><tr>';
+            keysArray.forEach(key => {
+                html += `<th>${escapeHtml(key)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            arr.forEach((item, rowIndex) => {
+                html += '<tr>';
+                keysArray.forEach(key => {
+                    const value = item[key];
+                    html += `<td>${formatCellValue(value, key, rowIndex)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Create table from object
+        function createTableFromObject(obj) {
+            let html = '<table><thead><tr><th>鍵</th><th>值</th></tr></thead><tbody>';
+
+            Object.entries(obj).forEach(([key, value], index) => {
+                html += '<tr>';
+                html += `<td><strong>${escapeHtml(key)}</strong></td>`;
+                html += `<td>${formatCellValue(value, key, index)}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Format cell value based on type
+        function formatCellValue(value, key, rowIndex) {
+            if (value === null) {
+                return '<span style="color: var(--text-secondary); font-style: italic;">null</span>';
+            }
+
+            if (value === undefined) {
+                return '<span style="color: var(--text-secondary); font-style: italic;">undefined</span>';
+            }
+
+            const type = typeof value;
+
+            if (type === 'object') {
+                if (Array.isArray(value)) {
+                    return `<span class="object-cell array-cell" onclick="navigateToObject(${rowIndex}, '${escapeHtml(key)}', true)" tabindex="0" data-row="${rowIndex}" data-key="${escapeHtml(key)}">陣列 [${value.length}]</span>`;
+                } else {
+                    const keyCount = Object.keys(value).length;
+                    return `<span class="object-cell" onclick="navigateToObject(${rowIndex}, '${escapeHtml(key)}', false)" tabindex="0" data-row="${rowIndex}" data-key="${escapeHtml(key)}">物件 {${keyCount}}</span>`;
+                }
+            }
+
+            if (type === 'boolean') {
+                return `<span style="color: ${value ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: 600;">${value}</span>`;
+            }
+
+            if (type === 'number') {
+                return `<span style="color: var(--success-color);">${value}</span>`;
+            }
+
+            return escapeHtml(String(value));
+        }
+
+        // Navigate to nested object
+        function navigateToObject(rowIndex, key, isArray) {
+            const currentLevel = navigationStack[navigationStack.length - 1];
+            let data = currentLevel.data;
+
+            // Get the nested object
+            let nestedData;
+            if (Array.isArray(data)) {
+                nestedData = data[rowIndex][key];
+            } else {
+                nestedData = data[key];
+            }
+
+            if (!nestedData) return;
+
+            // Add to navigation stack
+            navigationStack.push({
+                data: nestedData,
+                label: key
+            });
+
+            // Update breadcrumb
+            updateBreadcrumb();
+
+            // Render new table
+            renderTable(nestedData);
+        }
+
+        // Navigate to specific level in stack
+        function navigateToLevel(level) {
+            if (level < 0 || level >= navigationStack.length) return;
+
+            // Remove items after this level
+            navigationStack = navigationStack.slice(0, level + 1);
+
+            // Update breadcrumb
+            updateBreadcrumb();
+
+            // Render table
+            const currentLevel = navigationStack[navigationStack.length - 1];
+            renderTable(currentLevel.data);
+        }
+
+        // Navigate to root
+        function navigateToRoot() {
+            navigateToLevel(0);
+        }
+
+        // Update breadcrumb navigation
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = '';
+
+            navigationStack.forEach((item, index) => {
+                const isLast = index === navigationStack.length - 1;
+                const className = isLast ? 'breadcrumb-item active' : 'breadcrumb-item';
+                html += `<span class="${className}" onclick="navigateToLevel(${index})">${escapeHtml(item.label)}</span>`;
+
+                if (!isLast) {
+                    html += '<span class="breadcrumb-separator">→</span>';
+                }
+            });
+
+            breadcrumb.innerHTML = html;
+        }
+
+        // Keyboard navigation
+        function addKeyboardListener() {
+            // Remove existing listener
+            document.removeEventListener('keydown', handleKeyPress);
+            // Add new listener
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function handleKeyPress(e) {
+            // Get all object cells
+            const objectCells = document.querySelectorAll('.object-cell');
+            if (objectCells.length === 0) return;
+
+            // Handle Enter key on focused element
+            if (e.key === 'Enter') {
+                const focused = document.activeElement;
+                if (focused && focused.classList.contains('object-cell')) {
+                    focused.click();
+                }
+            }
+
+            // Handle Backspace to go back
+            if (e.key === 'Backspace' && navigationStack.length > 1) {
+                e.preventDefault();
+                navigateToLevel(navigationStack.length - 2);
+            }
+
+            // Handle arrow keys for navigation between cells
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                const focused = document.activeElement;
+                const index = Array.from(objectCells).indexOf(focused);
+
+                if (index !== -1) {
+                    e.preventDefault();
+                    let newIndex = index;
+
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                        newIndex = (index + 1) % objectCells.length;
+                    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                        newIndex = (index - 1 + objectCells.length) % objectCells.length;
+                    }
+
+                    objectCells[newIndex].focus();
+                }
+            }
+        }
+
+        // Show/hide empty state
+        function showEmptyState() {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('tableContent').innerHTML = '';
+        }
+
+        function hideEmptyState() {
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            showEmptyState();
+        }
+
+        // Clear data
+        function clearData() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('errorMessage').classList.remove('show');
+            currentData = null;
+            navigationStack = [];
+            showEmptyState();
+            document.getElementById('breadcrumb').innerHTML = '<span class="breadcrumb-item active">根目錄</span>';
+        }
+
+        // Load sample data
+        function loadSampleData() {
+            const sampleData = [
+                {
+                    "id": 1,
+                    "name": "張三",
+                    "age": 28,
+                    "active": true,
+                    "department": {
+                        "name": "技術部",
+                        "location": "台北",
+                        "manager": {
+                            "name": "李經理",
+                            "email": "manager@example.com"
+                        }
+                    },
+                    "skills": ["JavaScript", "Python", "React"],
+                    "salary": 50000
+                },
+                {
+                    "id": 2,
+                    "name": "李四",
+                    "age": 32,
+                    "active": false,
+                    "department": {
+                        "name": "業務部",
+                        "location": "台中",
+                        "manager": {
+                            "name": "王經理",
+                            "email": "wmanager@example.com"
+                        }
+                    },
+                    "skills": ["Sales", "Marketing"],
+                    "salary": 45000
+                },
+                {
+                    "id": 3,
+                    "name": "王五",
+                    "age": 25,
+                    "active": true,
+                    "department": {
+                        "name": "設計部",
+                        "location": "高雄",
+                        "manager": {
+                            "name": "陳經理",
+                            "email": "cmanager@example.com"
+                        }
+                    },
+                    "skills": ["Photoshop", "Illustrator", "Figma"],
+                    "salary": 48000
+                }
+            ];
+
+            document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            showEmptyState();
+        });
+    </script>
+</body>
+</html>
