@@ -43,15 +43,44 @@ class WidgetManager {
             this.copyEmbedCode();
         });
 
+        // Account 按鈕
+        document.getElementById('accountBtn').addEventListener('click', () => {
+            this.openTransactionModal();
+        });
+
+        // 關閉 Transaction 模態框
+        document.getElementById('closeTransactionModal').addEventListener('click', () => {
+            this.closeTransactionModal();
+        });
+
+        document.getElementById('cancelTransactionBtn').addEventListener('click', () => {
+            this.closeTransactionModal();
+        });
+
+        // More 按鈕切換
+        document.getElementById('showMoreBtn').addEventListener('click', () => {
+            this.toggleMoreOptions();
+        });
+
+        // Transaction 表單提交
+        document.getElementById('transactionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitTransaction();
+        });
+
         // 點擊模態框外部關閉
         window.addEventListener('click', (e) => {
             const widgetModal = document.getElementById('widgetModal');
             const embedModal = document.getElementById('embedModal');
+            const transactionModal = document.getElementById('transactionModal');
             if (e.target === widgetModal) {
                 this.closeModal();
             }
             if (e.target === embedModal) {
                 this.closeEmbedModal();
+            }
+            if (e.target === transactionModal) {
+                this.closeTransactionModal();
             }
         });
     }
@@ -322,6 +351,142 @@ class WidgetManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // 開啟 Transaction 模態框
+    openTransactionModal() {
+        const modal = document.getElementById('transactionModal');
+        const form = document.getElementById('transactionForm');
+
+        // 重置表單
+        form.reset();
+
+        // 設置預設值
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('transactionDate').value = today;
+        document.getElementById('transactionName').placeholder = '預設: SureApp';
+        document.getElementById('transactionNature').value = 'expense';
+        document.getElementById('transactionCurrency').value = 'TWD';
+
+        // 隱藏 More 選項
+        document.getElementById('moreOptions').style.display = 'none';
+        document.getElementById('showMoreBtn').textContent = 'More';
+
+        // 隱藏結果訊息
+        document.getElementById('transactionResult').style.display = 'none';
+
+        // 從 localStorage 讀取 Account ID (如果有的話)
+        const savedAccountId = localStorage.getItem('lastAccountId');
+        if (savedAccountId) {
+            document.getElementById('transactionAccountId').value = savedAccountId;
+        }
+
+        modal.classList.add('active');
+    }
+
+    // 關閉 Transaction 模態框
+    closeTransactionModal() {
+        const modal = document.getElementById('transactionModal');
+        modal.classList.remove('active');
+    }
+
+    // 切換 More 選項
+    toggleMoreOptions() {
+        const moreOptions = document.getElementById('moreOptions');
+        const showMoreBtn = document.getElementById('showMoreBtn');
+
+        if (moreOptions.style.display === 'none') {
+            moreOptions.style.display = 'block';
+            showMoreBtn.textContent = 'Less';
+        } else {
+            moreOptions.style.display = 'none';
+            showMoreBtn.textContent = 'More';
+        }
+    }
+
+    // 提交 Transaction
+    async submitTransaction() {
+        const accountId = document.getElementById('transactionAccountId').value.trim();
+        const amount = parseFloat(document.getElementById('transactionAmount').value);
+        const nature = document.getElementById('transactionNature').value;
+        const currency = document.getElementById('transactionCurrency').value;
+
+        // More 選項
+        let date = document.getElementById('transactionDate').value;
+        let name = document.getElementById('transactionName').value.trim();
+        const notes = document.getElementById('transactionNotes').value.trim();
+
+        // 設置預設值
+        if (!date) {
+            date = new Date().toISOString().split('T')[0];
+        }
+        if (!name) {
+            name = 'SureApp';
+        }
+
+        // 驗證必填欄位
+        if (!accountId || !amount || amount <= 0) {
+            alert('請填寫所有必填欄位');
+            return;
+        }
+
+        // 保存 Account ID 到 localStorage
+        localStorage.setItem('lastAccountId', accountId);
+
+        // 構建 API 請求
+        const requestBody = {
+            transaction: {
+                account_id: accountId,
+                name: name,
+                date: date,
+                amount: amount,
+                currency: currency,
+                nature: nature,
+                notes: notes || 'This transaction via mobile app.'
+            }
+        };
+
+        // 顯示載入狀態
+        const submitBtn = document.querySelector('#transactionForm button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '送出中...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('https://sure.lazyrhythm.com/api/v1/transactions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const resultDiv = document.getElementById('transactionResult');
+            const messageDiv = document.getElementById('transactionResultMessage');
+
+            if (response.ok) {
+                const data = await response.json();
+                messageDiv.innerHTML = `<div style="color: green; padding: 10px; background: #d4edda; border-radius: 5px;">✓ 交易新增成功！</div>`;
+                resultDiv.style.display = 'block';
+
+                // 3秒後關閉模態框
+                setTimeout(() => {
+                    this.closeTransactionModal();
+                }, 2000);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                messageDiv.innerHTML = `<div style="color: red; padding: 10px; background: #f8d7da; border-radius: 5px;">✗ 提交失敗: ${errorData.message || response.statusText}</div>`;
+                resultDiv.style.display = 'block';
+            }
+        } catch (error) {
+            const resultDiv = document.getElementById('transactionResult');
+            const messageDiv = document.getElementById('transactionResultMessage');
+            messageDiv.innerHTML = `<div style="color: red; padding: 10px; background: #f8d7da; border-radius: 5px;">✗ 網路錯誤: ${error.message}</div>`;
+            resultDiv.style.display = 'block';
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     }
 }
 

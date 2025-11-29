@@ -11,6 +11,7 @@
         <header>
             <h1>LazyEmbed 小工具管理平台</h1>
             <p class="subtitle">輕鬆建立和管理您的嵌入式小工具</p>
+            <button id="accountBtn" class="btn btn-account">Account</button>
         </header>
 
         <main>
@@ -97,6 +98,79 @@
                 <div class="code-block">
                     <pre id="embedCode"></pre>
                     <button class="btn btn-copy" id="copyEmbedBtn">複製代碼</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction 表單模態框 -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>新增交易</h2>
+                <button class="close-btn" id="closeTransactionModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label for="transactionNature">交易類型 *</label>
+                        <select id="transactionNature" required>
+                            <option value="expense">Expense (支出)</option>
+                            <option value="income">Income (收入)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transactionAmount">金額 *</label>
+                        <input type="number" id="transactionAmount" required placeholder="請輸入金額" step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transactionAccountId">Account ID *</label>
+                        <input type="text" id="transactionAccountId" required placeholder="請輸入 Account ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transactionCurrency">幣別 *</label>
+                        <select id="transactionCurrency" required>
+                            <option value="TWD">TWD (台幣)</option>
+                            <option value="USD">USD (美元)</option>
+                            <option value="EUR">EUR (歐元)</option>
+                            <option value="JPY">JPY (日圓)</option>
+                            <option value="CNY">CNY (人民幣)</option>
+                        </select>
+                    </div>
+
+                    <!-- More 選項按鈕 -->
+                    <div class="form-group">
+                        <button type="button" id="showMoreBtn" class="btn btn-secondary">More</button>
+                    </div>
+
+                    <!-- 更多選項區域（預設隱藏） -->
+                    <div id="moreOptions" style="display: none;">
+                        <div class="form-group">
+                            <label for="transactionDate">日期 (yyyy-MM-dd)</label>
+                            <input type="date" id="transactionDate">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="transactionName">名稱</label>
+                            <input type="text" id="transactionName" placeholder="預設: SureApp">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="transactionNotes">備註</label>
+                            <textarea id="transactionNotes" rows="3" placeholder="輸入備註..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelTransactionBtn">取消</button>
+                        <button type="submit" class="btn btn-primary">送出</button>
+                    </div>
+                </form>
+                <div id="transactionResult" style="display: none; margin-top: 20px;">
+                    <div id="transactionResultMessage"></div>
                 </div>
             </div>
         </div>
