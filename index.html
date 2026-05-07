@@ -1,107 +1,422 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LazyEmbed - 小工具管理平台</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LazyEmbed — 小工具集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f12;
+    --bg2:       #13161b;
+    --bg3:       #1a1e25;
+    --bg4:       #222730;
+    --border:    #2a2f3a;
+    --border2:   #333a47;
+    --text:      #cdd5e0;
+    --text2:     #7e8a9e;
+    --text3:     #4a5568;
+    --accent:    #3b82f6;
+    --accent-bg: rgba(59,130,246,.10);
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'IBM Plex Sans', system-ui, sans-serif;
+    --radius:    10px;
+    --radius-sm: 6px;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: .02em;
+    text-decoration: none;
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .logo-sub {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text3);
+    font-family: var(--sans);
+    letter-spacing: 0;
+    margin-left: 2px;
+  }
+  .spacer { flex: 1; }
+  .header-meta {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  /* ── Hero ────────────────────────────────────── */
+  .hero {
+    padding: 56px 24px 40px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .hero-title {
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+    margin-bottom: 14px;
+    letter-spacing: -.01em;
+  }
+  .hero-title span {
+    background: linear-gradient(90deg, #3b82f6, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-desc {
+    font-size: 15px;
+    color: var(--text2);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  /* ── Section ─────────────────────────────────── */
+  .section {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 64px;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .section-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+  .divider {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Tool grid ───────────────────────────────── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .18s, background .18s, transform .18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--card-tint, rgba(59,130,246,.04)), transparent 60%);
+    pointer-events: none;
+  }
+  .tool-card:hover {
+    border-color: var(--card-accent, var(--accent));
+    background: var(--bg3);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--card-icon-bg, var(--accent-bg));
+    border: 1px solid var(--card-icon-border, rgba(59,130,246,.2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  .card-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--accent));
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 12.5px;
+    color: var(--text2);
+    line-height: 1.65;
+    flex: 1;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .card-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .feat-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--bg4);
+    color: var(--text3);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+  .card-arrow {
+    font-size: 13px;
+    color: var(--text3);
+    transition: color .15s, transform .15s;
+  }
+  .tool-card:hover .card-arrow {
+    color: var(--card-accent, var(--accent));
+    transform: translateX(3px);
+  }
+
+  /* card colour themes */
+  .theme-blue  { --card-accent: #3b82f6; --card-tint: rgba(59,130,246,.05);  --card-icon-bg: rgba(59,130,246,.1);  --card-icon-border: rgba(59,130,246,.2); }
+  .theme-indigo{ --card-accent: #818cf8; --card-tint: rgba(129,140,248,.05); --card-icon-bg: rgba(129,140,248,.1); --card-icon-border: rgba(129,140,248,.2); }
+  .theme-green { --card-accent: #22c55e; --card-tint: rgba(34,197,94,.05);   --card-icon-bg: rgba(34,197,94,.1);   --card-icon-border: rgba(34,197,94,.2); }
+  .theme-amber { --card-accent: #f59e0b; --card-tint: rgba(245,158,11,.05);  --card-icon-bg: rgba(245,158,11,.1);  --card-icon-border: rgba(245,158,11,.2); }
+  .theme-rose  { --card-accent: #f87171; --card-tint: rgba(248,113,113,.05); --card-icon-bg: rgba(248,113,113,.1); --card-icon-border: rgba(248,113,113,.2); }
+  .theme-cyan  { --card-accent: #22d3ee; --card-tint: rgba(34,211,238,.05);  --card-icon-bg: rgba(34,211,238,.1);  --card-icon-border: rgba(34,211,238,.2); }
+
+  /* ── Example cards (dimmed) ─────────────────── */
+  .tool-card.example {
+    opacity: .55;
+    cursor: default;
+    pointer-events: none;
+  }
+  .tool-card.example:hover { transform: none; }
+  .example-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-left: auto;
+  }
+
+  /* ── Footer ──────────────────────────────────── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 36px 16px 28px; }
+    .section { padding: 0 16px 48px; }
+    .tool-grid { grid-template-columns: 1fr; }
+    .header { padding: 0 16px; }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>LazyEmbed 小工具管理平台</h1>
-            <p class="subtitle">輕鬆建立和管理您的嵌入式小工具</p>
-        </header>
 
-        <main>
-            <section class="actions">
-                <button id="addWidgetBtn" class="btn btn-primary">+ 新增小工具</button>
-            </section>
+<header class="header">
+  <a class="logo" href="index.html">
+    <div class="logo-icon">LE</div>
+    LazyEmbed
+    <span class="logo-sub">小工具集</span>
+  </a>
+  <div class="spacer"></div>
+  <span class="header-meta" id="toolCount"></span>
+</header>
 
-            <section class="widgets-list">
-                <h2>我的小工具</h2>
-                <div id="widgetGrid" class="widget-grid">
-                    <!-- 小工具卡片會動態載入 -->
-                </div>
-                <div id="emptyState" class="empty-state">
-                    <p>尚未建立任何小工具</p>
-                    <p class="hint">點擊「新增小工具」按鈕開始建立</p>
-                </div>
-            </section>
-        </main>
-    </div>
+<div class="hero">
+  <div class="hero-eyebrow">Developer Toolbox</div>
+  <h1 class="hero-title">即開即用的<span>瀏覽器工具</span></h1>
+  <p class="hero-desc">無需安裝、無需登入。貼上資料，立刻得到結果。所有工具在瀏覽器本地運行，資料不離開你的裝置。</p>
+</div>
 
-    <!-- 新增/編輯小工具模態框 -->
-    <div id="widgetModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">新增小工具</h2>
-                <button class="close-btn" id="closeModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="widgetForm">
-                    <div class="form-group">
-                        <label for="widgetName">小工具名稱 *</label>
-                        <input type="text" id="widgetName" required placeholder="例：天氣查詢">
-                    </div>
+<div class="section">
+  <div class="section-head">
+    <span class="section-title">資料工具</span>
+    <span class="section-count" id="dataCount"></span>
+    <span class="divider"></span>
+  </div>
+  <div class="tool-grid" id="dataGrid">
 
-                    <div class="form-group">
-                        <label for="widgetType">小工具類型 *</label>
-                        <select id="widgetType" required>
-                            <option value="">請選擇類型</option>
-                            <option value="iframe">iFrame 嵌入</option>
-                            <option value="script">JavaScript 腳本</option>
-                            <option value="html">HTML 片段</option>
-                            <option value="custom">自訂小工具</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="widgetDescription">描述</label>
-                        <textarea id="widgetDescription" rows="3" placeholder="簡單描述這個小工具的功能..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="widgetCode">嵌入代碼 *</label>
-                        <textarea id="widgetCode" rows="6" required placeholder="輸入嵌入代碼或 URL..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="widgetWidth">寬度</label>
-                        <input type="text" id="widgetWidth" placeholder="例：100% 或 500px">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="widgetHeight">高度</label>
-                        <input type="text" id="widgetHeight" placeholder="例：400px">
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
-                        <button type="submit" class="btn btn-primary">儲存</button>
-                    </div>
-                </form>
-            </div>
+    <a class="tool-card theme-blue" href="widgets/json-filter.html">
+      <div class="card-icon">{ }</div>
+      <div class="card-tag">JSON</div>
+      <div class="card-title">JSON Filter</div>
+      <div class="card-desc">貼入任意 JSON，勾選想保留的屬性，即時輸出篩選結果。支援巢狀結構、值分析，以及多筆跳轉導航。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">屬性篩選</span>
+          <span class="feat-chip">值分析</span>
+          <span class="feat-chip">語法高亮</span>
         </div>
-    </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
 
-    <!-- 嵌入代碼模態框 -->
-    <div id="embedModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>嵌入代碼</h2>
-                <button class="close-btn" id="closeEmbedModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="info-text">複製以下代碼並貼到您的網站中：</p>
-                <div class="code-block">
-                    <pre id="embedCode"></pre>
-                    <button class="btn btn-copy" id="copyEmbedBtn">複製代碼</button>
-                </div>
-            </div>
+    <a class="tool-card theme-indigo" href="widgets/json-table-visualizer.html">
+      <div class="card-icon">⊞</div>
+      <div class="card-tag">JSON · TABLE</div>
+      <div class="card-title">JSON Table Visualizer</div>
+      <div class="card-desc">將 JSON 陣列轉為可排序、可搜尋的互動式表格。快速瀏覽大量結構化資料，支援欄位排序與關鍵字過濾。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">表格視圖</span>
+          <span class="feat-chip">排序</span>
+          <span class="feat-chip">搜尋</span>
         </div>
-    </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
 
-    <script src="js/app.js"></script>
+    <a class="tool-card theme-green" href="widgets/cashflow-visualizer.html">
+      <div class="card-icon">↕</div>
+      <div class="card-tag">FINANCE · CHART</div>
+      <div class="card-title">資金流可視化</div>
+      <div class="card-desc">視覺化呈現資金流向，直觀掌握收支結構與趨勢。適合分析財務報表或追蹤現金流動。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">流量圖</span>
+          <span class="feat-chip">收支分析</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <span class="section-title">範例小工具</span>
+    <span class="divider"></span>
+    <span class="example-label">僅供參考</span>
+  </div>
+  <div class="tool-grid">
+
+    <a class="tool-card theme-amber example" href="widgets/example-clock.html">
+      <div class="card-icon">🕐</div>
+      <div class="card-tag">DEMO</div>
+      <div class="card-title">時鐘</div>
+      <div class="card-desc">即時顯示目前時間的時鐘小工具範例。</div>
+      <div class="card-footer">
+        <div class="card-features"><span class="feat-chip">即時時間</span></div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="tool-card theme-cyan example" href="widgets/example-counter.html">
+      <div class="card-icon">＋</div>
+      <div class="card-tag">DEMO</div>
+      <div class="card-title">計數器</div>
+      <div class="card-desc">簡單的計數器小工具範例，展示基本互動功能。</div>
+      <div class="card-footer">
+        <div class="card-features"><span class="feat-chip">互動</span></div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="tool-card theme-rose example" href="widgets/example-weather.html">
+      <div class="card-icon">☁</div>
+      <div class="card-tag">DEMO</div>
+      <div class="card-title">天氣查詢</div>
+      <div class="card-desc">天氣資訊小工具範例，展示外部 API 資料整合。</div>
+      <div class="card-footer">
+        <div class="card-features"><span class="feat-chip">API 整合</span></div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<footer class="footer">
+  LazyEmbed · 所有運算在瀏覽器本地執行，資料不上傳至任何伺服器
+</footer>
+
+<script>
+  const dataTools = document.querySelectorAll('#dataGrid .tool-card');
+  document.getElementById('dataCount').textContent = dataTools.length + ' 個工具';
+  document.getElementById('toolCount').textContent = dataTools.length + ' tools';
+</script>
 </body>
 </html>

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Filter — 屬性篩選工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f12;
+    --bg2:       #13161b;
+    --bg3:       #1a1e25;
+    --bg4:       #222730;
+    --border:    #2a2f3a;
+    --border2:   #333a47;
+    --text:      #cdd5e0;
+    --text2:     #7e8a9e;
+    --text3:     #4a5568;
+    --accent:    #3b82f6;
+    --accent2:   #1d4ed8;
+    --accent-bg: rgba(59,130,246,.10);
+    --warn:      #f59e0b;
+    --warn-bg:   rgba(245,158,11,.10);
+    --ok:        #22c55e;
+    --err:       #f87171;
+    --err-bg:    rgba(248,113,113,.08);
+    --null-c:    #4a5568;
+    --bool-c:    #fb923c;
+    --num-c:     #4ade80;
+    --str-c:     #f472b6;
+    --key-c:     #60a5fa;
+    --hl-bg:     rgba(59,130,246,.08);
+    --hl-active: rgba(59,130,246,.18);
+    --hl-border: #3b82f6;
+    --radius:    6px;
+    --radius-sm: 4px;
+    --mono:      'JetBrains Mono', 'Fira Code', monospace;
+    --sans:      'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+
+  /* ── Layout ─────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-rows: 48px 1fr;
+    grid-template-columns: 260px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  .header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    z-index: 10;
+  }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text2);
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sep { color: var(--text3); font-size: 11px; }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: .02em;
+  }
+  .logo-icon {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 500;
+    border: 1px solid rgba(59,130,246,.2);
+  }
+  .spacer { flex: 1; }
+  .hbtn {
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .hbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .hbtn.danger:hover { border-color: var(--err); color: var(--err); }
+
+  /* ── Sidebar ─────────────────────────────────── */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg2);
+  }
+  .search-wrap {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .search-input {
+    width: 100%;
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    transition: border .15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text3); }
+
+  .key-list { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+  .key-list::-webkit-scrollbar { width: 4px; }
+  .key-list::-webkit-scrollbar-track { background: transparent; }
+  .key-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .sec-head {
+    padding: 10px 12px 3px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sec-head .n { color: var(--text3); font-weight: 400; }
+
+  .krow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background .1s;
+    user-select: none;
+  }
+  .krow:hover { background: var(--bg3); }
+  .krow input[type=checkbox] {
+    accent-color: var(--accent);
+    width: 13px; height: 13px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .krow .kname {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .krow .kcount {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .krow.is-rest .kname { color: var(--text2); }
+
+  .auto-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+  }
+  .auto-box {
+    width: 13px; height: 13px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    background: var(--bg4);
+    flex-shrink: 0;
+  }
+  .auto-row .kname {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text3);
+  }
+  .parent-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--bg4);
+    color: var(--text3);
+    border: 1px solid var(--border);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .pin-btn {
+    font-size: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: var(--text3);
+    flex-shrink: 0;
+    transition: all .15s;
+    line-height: 1;
+  }
+  .pin-btn:hover { color: var(--warn); }
+  .pin-btn.active {
+    color: var(--warn);
+    background: var(--warn-bg);
+    border: 1px solid rgba(245,158,11,.25);
+  }
+
+  .no-match {
+    padding: 20px 12px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  /* ── Main panel ─────────────────────────────── */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ── Toggle panels ──────────────────────────── */
+  .toggle-panel { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .toggle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    cursor: pointer;
+    background: var(--bg2);
+    user-select: none;
+    transition: background .12s;
+  }
+  .toggle-header:hover { background: var(--bg3); }
+  .toggle-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toggle-title .sub { font-weight: 400; color: var(--text3); text-transform: none; letter-spacing: 0; }
+  .toggle-actions { display: flex; align-items: center; gap: 8px; }
+  .tbtn {
+    font-size: 10px;
+    color: var(--text2);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 9px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all .15s;
+  }
+  .tbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .chevron { font-size: 9px; color: var(--text3); transition: transform .2s; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .toggle-body { display: none; }
+  .toggle-body.open { display: block; }
+
+  /* ── Input textarea ─────────────────────────── */
+  .input-body { height: 160px; overflow: auto; padding: 10px 14px; }
+  .json-ta {
+    width: 100%; height: 100%;
+    resize: none;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    border: none; outline: none;
+    background: transparent;
+    color: var(--text2);
+  }
+  .err-bar {
+    padding: 6px 14px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--err);
+    background: var(--err-bg);
+    border-top: 1px solid rgba(248,113,113,.15);
+    display: none;
+  }
+
+  /* ── Output lines ───────────────────────────── */
+  .output-scroll {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .output-scroll::-webkit-scrollbar { width: 4px; }
+  .output-scroll::-webkit-scrollbar-track { background: transparent; }
+  .output-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .out-line {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.75;
+    padding: 0 14px;
+    white-space: pre;
+    border-left: 2px solid transparent;
+    transition: background .1s, border-color .1s;
+  }
+  .out-line.hl-block { background: var(--hl-bg); }
+  .out-line.hl-key   { background: var(--hl-active); border-left-color: var(--hl-border); }
+
+  /* JSON syntax colouring */
+  .j-key  { color: var(--key-c); }
+  .j-str  { color: var(--str-c); }
+  .j-num  { color: var(--num-c); }
+  .j-bool { color: var(--bool-c); }
+  .j-null { color: var(--null-c); font-style: italic; }
+  .j-punc { color: var(--text3); }
+
+  /* ── Inspect panel ──────────────────────────── */
+  .inspect-panel {
+    flex: 1;
+    overflow-y: auto;
+    display: none;
+  }
+  .inspect-panel::-webkit-scrollbar { width: 4px; }
+  .inspect-panel::-webkit-scrollbar-track { background: transparent; }
+  .inspect-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .inspect-header {
+    padding: 8px 14px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .inspect-hint { font-weight: 400; color: var(--text3); text-transform: none; letter-spacing: 0; font-size: 10px; }
+
+  .inspect-row {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .inspect-row:last-child { border-bottom: none; }
+
+  .ir-meta {
+    padding: 10px 12px 10px 14px;
+    border-right: 1px solid var(--border);
+  }
+  .ir-key {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .ir-key.is-sel { color: var(--key-c); }
+  .ir-key.not-sel { color: var(--text3); }
+  .ir-path {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  .ir-vals {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+  .ir-vals.clickable { cursor: pointer; }
+  .ir-vals.clickable:hover { background: var(--bg3); }
+  .ir-vals.dimmed { opacity: .45; }
+  .val-row {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .val-count { font-size: 10px; color: var(--text3); }
+
+  .ir-nav {
+    padding: 10px 12px 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .nav-btns {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav-btn {
+    width: 22px; height: 22px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 9px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-counter {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-align: center;
+    min-width: 32px;
+  }
+  .unpin-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 10px;
+    color: var(--text3);
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all .15s;
+    margin-top: 4px;
+  }
+  .unpin-btn:hover { border-color: var(--err); color: var(--err); }
+
+  /* ── Empty state ────────────────────────────── */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .empty-icon { font-size: 28px; opacity: .4; }
+  .empty-state p { font-family: var(--mono); }
+
+  /* ── val renderers (inline) ─────────────────── */
+  .v-null { color: var(--null-c); font-style: italic; }
+  .v-bool { color: var(--bool-c); }
+  .v-num  { color: var(--num-c); }
+  .v-str  { color: var(--str-c); }
+  .v-sep  { color: var(--text3); }
+</style>
+</head>
+<body>
+<div class="layout" id="app">
+  <!-- Header -->
+  <header class="header">
+    <a class="back-btn" href="../index.html">&#8592; 返回</a>
+    <span class="sep">/</span>
+    <div class="logo">
+      <div class="logo-icon">{ }</div>
+      JSON Filter
+    </div>
+    <span id="keysBadge" class="badge" style="display:none">0 keys</span>
+    <div class="spacer"></div>
+    <button class="hbtn" id="btnSample">載入範例</button>
+    <button class="hbtn danger" id="btnClear">清除</button>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="search-wrap">
+      <input id="searchEl" class="search-input" type="text" placeholder="搜尋屬性名稱…">
+    </div>
+    <div id="keyList" class="key-list"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Input -->
+    <div class="toggle-panel">
+      <div class="toggle-header" id="inputHeader">
+        <div class="toggle-title">輸入 JSON</div>
+        <div class="toggle-actions">
+          <button class="tbtn" id="btnPaste">貼上</button>
+          <span class="chevron" id="chevInput">▼</span>
+        </div>
+      </div>
+      <div class="toggle-body" id="inputBody">
+        <div class="input-body">
+          <textarea class="json-ta" id="rawTa" spellcheck="false" placeholder="在此貼入 JSON…"></textarea>
+        </div>
+        <div class="err-bar" id="errEl"></div>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="toggle-panel">
+      <div class="toggle-header" id="outputHeader">
+        <div class="toggle-title">
+          輸出
+          <span class="sub">保留勾選屬性</span>
+        </div>
+        <div class="toggle-actions">
+          <button class="tbtn" id="copyBtn">複製</button>
+          <span class="chevron" id="chevOutput">▼</span>
+        </div>
+      </div>
+      <div class="toggle-body" id="outputBody">
+        <div class="output-scroll" id="outLines"></div>
+      </div>
+    </div>
+
+    <!-- Inspect -->
+    <div class="inspect-panel" id="inspectPanel">
+      <div class="inspect-header">
+        📌 值分析
+        <span class="inspect-hint">點擊值格跳轉至輸出行</span>
+      </div>
+      <div id="inspectTable"></div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <p>貼入 JSON，勾選屬性，📌 釘選查看值分析</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const SAMPLE = '{"TrialItemList":[{"SeqNo":1,"TrialItemContract":4,"RecycleQty":6,"TrialCustomerStockBack":0,"TrialCustomerStock":6,"TrialQty":6,"ContractPKNO":2080218,"RecycleServe":{"AlterDate":"/Date(-62135596800000)/","Enabled":false,"Store":null,"Role":null},"Item":{"InPrice":0,"TaxPrice":0,"IsDirtyFlg":false,"IsCustomerStock":false,"IsRentItem":false,"ItemJNM":null,"ItemAgainst":null,"CategoryId":null,"Specification":null,"ItemCName":null,"ItemEName":"M-90","ItemCode":null,"ItemBar":"22"},"ContractFlg":"0","RecycleDate":null,"NextTargetDate":"2026/04/14","RecycleType":"0"},{"SeqNo":2,"TrialItemContract":4,"RecycleQty":2,"TrialCustomerStockBack":0,"TrialCustomerStock":6,"TrialQty":6,"ContractPKNO":2080219,"RecycleServe":{"AlterDate":"/Date(-62135596800000)/","Enabled":false,"Store":null,"Role":null},"Item":{"InPrice":0,"TaxPrice":0,"IsDirtyFlg":false,"IsCustomerStock":false,"IsRentItem":false,"ItemJNM":null,"ItemAgainst":null,"CategoryId":null,"Specification":null,"ItemCName":null,"ItemEName":"M90-H","ItemCode":null,"ItemBar":"418"},"ContractFlg":"0","RecycleDate":null,"NextTargetDate":"2026/04/14","RecycleType":"0"}],"CustomerID":"2068846","TrialServeID":"0027","DeliveryDate":"2026/03/31"}';
+
+// ── State ─────────────────────────────────────────────────
+let raw='{}', parsed=null, parseErr=null;
+let allKeys={}, keyTree={};
+let selectedKeys=new Set(), pinnedKeys=new Set();
+let search='', showInput=false, showOutput=false;
+let outputLines=[];
+let nav={ key:null, matches:[], idx:-1 };
+
+// ── Helpers ───────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const $ = id => document.getElementById(id);
+
+// ── JSON parsing ──────────────────────────────────────────
+function extractKeys(obj, parent, km, tree) {
+  if (!obj || typeof obj !== 'object') return;
+  if (Array.isArray(obj)) { obj.forEach(i => extractKeys(i, parent, km, tree)); return; }
+  Object.keys(obj).forEach(k => {
+    km[k] = (km[k]||0)+1;
+    if (!tree[k]) tree[k] = { parents: new Set(), children: new Set() };
+    if (parent !== null) {
+      tree[k].parents.add(parent);
+      if (!tree[parent]) tree[parent] = { parents: new Set(), children: new Set() };
+      tree[parent].children.add(k);
+    }
+    extractKeys(obj[k], k, km, tree);
+  });
+}
+
+function parseJSON(text) {
+  try {
+    parsed = JSON.parse(text);
+    allKeys = {}; keyTree = {};
+    extractKeys(parsed, null, allKeys, keyTree);
+    parseErr = null;
+  } catch(e) { parsed = null; parseErr = e.message; }
+}
+
+// ── Filter ────────────────────────────────────────────────
+function filterKeep(obj, sel) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') return [false, obj];
+  if (Array.isArray(obj)) {
+    const items = [];
+    obj.forEach(i => { const [ok,v] = filterKeep(i, sel); if (ok) items.push(v); });
+    return [items.length > 0, items];
+  }
+  const result = {}; let hasAny = false;
+  Object.keys(obj).forEach(k => {
+    if (sel.has(k)) { result[k] = obj[k]; hasAny = true; }
+    else if (obj[k] && typeof obj[k] === 'object') {
+      const [ok,v] = filterKeep(obj[k], sel); if (ok) { result[k]=v; hasAny=true; }
+    }
+  });
+  return [hasAny, result];
+}
+
+function getAutoParents(sel, tree) {
+  const auto = new Set();
+  function up(k) { const n=tree[k]; if(!n) return; n.parents.forEach(p=>{ if(!sel.has(p)&&!auto.has(p)){auto.add(p);up(p);} }); }
+  sel.forEach(k => up(k));
+  return auto;
+}
+
+// ── Paths ─────────────────────────────────────────────────
+function findPaths(obj, key, cur) {
+  const r = [];
+  if (!obj || typeof obj !== 'object') return r;
+  if (Array.isArray(obj)) { obj.forEach(i => findPaths(i,key,cur).forEach(p=>r.push(p))); return r; }
+  Object.keys(obj).forEach(k => {
+    const p = cur ? `${cur}.${k}` : k;
+    if (k === key) r.push(p);
+    findPaths(obj[k], key, p).forEach(x => r.push(x));
+  });
+  return r;
+}
+function normPath(p) { return p.replace(/\.(\d+)(\.|$)/g, (_,__,dot) => `[]${dot||''}`); }
+function getUniquePaths(key) {
+  if (!parsed) return [];
+  return [...new Set(findPaths(parsed, key, '').map(normPath))];
+}
+
+// ── Values ────────────────────────────────────────────────
+function collectVals(obj, keys) {
+  const r = {}; keys.forEach(k => r[k]=[]);
+  function walk(o) {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { o.forEach(walk); return; }
+    Object.keys(o).forEach(k => { if (r[k]!==undefined) r[k].push(o[k]); walk(o[k]); });
+  }
+  walk(obj); return r;
+}
+
+function renderValHtml(v) {
+  if (v === null) return `<span class="v-null">null</span>`;
+  if (typeof v === 'boolean') return `<span class="v-bool">${v}</span>`;
+  if (typeof v === 'number') return `<span class="v-num">${v}</span>`;
+  if (typeof v === 'object') return `<span class="v-null">[...]</span>`;
+  return `<span class="v-str">"${esc(String(v).slice(0,60))}"</span>`;
+}
+
+// ── Syntax highlight JSON line ────────────────────────────
+function hlLine(line) {
+  let s = line
+    .replace(/("(?:[^"\\]|\\.)*")\s*:/g, (_, k) => `<span class="j-key">${esc(k)}</span>:`)
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, (_, v) => `: <span class="j-str">${esc(v)}</span>`)
+    .replace(/:\s*(-?\d+\.?\d*(?:[eE][+-]?\d+)?)/g, (_, v) => `: <span class="j-num">${v}</span>`)
+    .replace(/:\s*(true|false)/g, (_, v) => `: <span class="j-bool">${v}</span>`)
+    .replace(/:\s*(null)/g, (_, v) => `: <span class="j-null">${v}</span>`);
+  s = s
+    .replace(/^(\s*)("(?:[^"\\]|\\.)*")(,?)$/g, (_, sp, v, c) => `${sp}<span class="j-str">${esc(v)}</span>${c}`)
+    .replace(/^(\s*)(-?\d+\.?\d*)(,?)$/g, (_, sp, v, c) => `${sp}<span class="j-num">${v}</span>${c}`)
+    .replace(/^(\s*)(true|false)(,?)$/g, (_, sp, v, c) => `${sp}<span class="j-bool">${v}</span>${c}`)
+    .replace(/^(\s*)(null)(,?)$/g, (_, sp, v, c) => `${sp}<span class="j-null">${v}</span>${c}`);
+  return s;
+}
+
+// ── Output build & navigation ─────────────────────────────
+function buildOutputLines() {
+  nav = { key:null, matches:[], idx:-1 };
+  const el = $('outLines'); if (!el) return;
+  if (!parsed || selectedKeys.size === 0) {
+    outputLines = [];
+    el.innerHTML = `<div style="padding:12px 14px;font-size:12px;color:var(--text3);font-family:var(--mono)">${!parsed?'// 貼入 JSON 開始使用':'// 請勾選要保留的屬性'}</div>`;
+    refreshNavCounters(); return;
+  }
+  const [,v] = filterKeep(parsed, selectedKeys);
+  outputLines = JSON.stringify(v, null, 2).split('\n');
+  el.innerHTML = outputLines.map((line,i) =>
+    `<div id="ol${i}" class="out-line">${hlLine(line)}</div>`
+  ).join('');
+  refreshNavCounters();
+}
+
+function findMatchLines(key) {
+  const pat = new RegExp(`^\\s*"${key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}"\\s*:`);
+  return outputLines.reduce((acc, line, i) => {
+    if (!pat.test(line)) return acc;
+    const ki = line.search(/\S/);
+    const pi = Math.max(0, ki - 2);
+    let bs = i, be = i;
+    if (ki >= 2) {
+      for (let j=i-1; j>=0; j--) {
+        const l=outputLines[j], li=l.search(/\S/);
+        if (li===pi && l.trimEnd().endsWith('{')) { bs=j; break; }
+        if (li<pi) break;
+      }
+    }
+    for (let j=i+1; j<outputLines.length; j++) {
+      const l=outputLines[j], li=l.search(/\S/), t=l.trim();
+      if (li===pi && (t==='}'||t==='},'||t==='}]'||t==='}],')) { be=j; break; }
+      if (li<pi) break;
+    }
+    acc.push({ keyLine:i, blockStart:bs, blockEnd:be }); return acc;
+  }, []);
+}
+
+function applyHighlight(matchIdx) {
+  outputLines.forEach((_,i) => {
+    const el=$('ol'+i);
+    if (el) { el.classList.remove('hl-block','hl-key'); }
+  });
+  if (matchIdx < 0 || !nav.matches[matchIdx]) return;
+  const m = nav.matches[matchIdx];
+  for (let i=m.blockStart; i<=m.blockEnd; i++) {
+    const el=$('ol'+i); if (el) el.classList.add('hl-block');
+  }
+  const kEl = $('ol'+m.keyLine);
+  if (kEl) {
+    kEl.classList.add('hl-key');
+    kEl.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+}
+
+function navigateKey(key, dir) {
+  if (!selectedKeys.has(key)) return;
+  if (nav.key !== key) {
+    nav.key = key; nav.matches = findMatchLines(key); nav.idx = 0;
+  } else if (dir==='next') {
+    nav.idx = (nav.idx+1) % Math.max(1, nav.matches.length);
+  } else if (dir==='prev') {
+    nav.idx = (nav.idx-1+Math.max(1,nav.matches.length)) % Math.max(1,nav.matches.length);
+  } else {
+    nav.idx = 0;
+  }
+  if (!showOutput) { showOutput=true; updateTogglePanels(); }
+  applyHighlight(nav.idx);
+  refreshNavCounters();
+}
+
+function refreshNavCounters() {
+  [...pinnedKeys].forEach(k => {
+    const counter = $('iNav_'+k);
+    const navWrap = $('iNavWrap_'+k);
+    if (!counter||!navWrap) return;
+    if (!selectedKeys.has(k)) { navWrap.style.display='none'; return; }
+    const m = nav.key===k ? nav.matches : findMatchLines(k);
+    if (!m.length) { navWrap.style.display='none'; return; }
+    navWrap.style.display='flex';
+    const cur = nav.key===k ? nav.idx+1 : '–';
+    counter.textContent = `${cur}/${m.length}`;
+    const pBtn=$('iNavP_'+k), nBtn=$('iNavN_'+k);
+    if (pBtn) pBtn.style.display = m.length>1?'flex':'none';
+    if (nBtn) nBtn.style.display = m.length>1?'flex':'none';
+  });
+}
+
+// ── Key list update ───────────────────────────────────────
+function updateKeyList() {
+  const el = $('keyList'); if (!el) return;
+  const auto = getAutoParents(selectedKeys, keyTree);
+  const q = search.toLowerCase();
+  const all = Object.keys(allKeys).sort();
+  const match = k => !q || k.toLowerCase().includes(q);
+  const selList  = all.filter(k => selectedKeys.has(k) && match(k));
+  const autoList = all.filter(k => auto.has(k) && !selectedKeys.has(k) && match(k));
+  const restList = all.filter(k => !selectedKeys.has(k) && !auto.has(k) && match(k));
+
+  function secH(label, n) {
+    return n ? `<div class="sec-head">${label} <span class="n">${n}</span></div>` : '';
+  }
+  function pinB(k) {
+    const on = pinnedKeys.has(k);
+    return `<button class="pin-btn${on?' active':''}" data-pin="${k}" title="${on?'取消值分析':'釘選值分析'}">📌</button>`;
+  }
+  function rowSel(k) {
+    return `<div class="krow" data-toggle="${k}" data-val="false">
+      <input type="checkbox" checked data-cb="${k}">
+      <span class="kname">${esc(k)}</span>
+      <span class="kcount">${allKeys[k]||''}</span>
+      ${pinB(k)}
+    </div>`;
+  }
+  function rowAuto(k) {
+    return `<div class="auto-row">
+      <span class="auto-box"></span>
+      <span class="kname">${esc(k)}</span>
+      <span class="parent-tag">父</span>
+      ${pinB(k)}
+    </div>`;
+  }
+  function rowRest(k) {
+    return `<div class="krow is-rest" data-toggle="${k}" data-val="true">
+      <input type="checkbox" data-cb="${k}">
+      <span class="kname">${esc(k)}</span>
+      <span class="kcount">${allKeys[k]||''}</span>
+      ${pinB(k)}
+    </div>`;
+  }
+
+  let html = secH('已選取', selList.length) + selList.map(rowSel).join('')
+    + secH('父項（自動帶入）', autoList.length) + autoList.map(rowAuto).join('')
+    + secH('未選', restList.length) + restList.map(rowRest).join('');
+  if (!html && q) html = `<div class="no-match">無符合「${esc(q)}」的屬性</div>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll('.krow').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('[data-pin]')) return;
+      toggleKey(row.dataset.toggle, row.dataset.val==='true');
+    });
+  });
+  el.querySelectorAll('input[data-cb]').forEach(cb => {
+    cb.addEventListener('change', e => { e.stopPropagation(); toggleKey(cb.dataset.cb, cb.checked); });
+    cb.addEventListener('click', e => e.stopPropagation());
+  });
+  el.querySelectorAll('[data-pin]').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); togglePin(btn.dataset.pin); });
+  });
+
+  const badge = $('keysBadge');
+  if (badge) {
+    const n = Object.keys(allKeys).length;
+    badge.textContent = n + ' keys';
+    badge.style.display = n ? '' : 'none';
+  }
+}
+
+// ── Inspect update ────────────────────────────────────────
+function updateInspect() {
+  const panel  = $('inspectPanel');
+  const table  = $('inspectTable');
+  const empty  = $('emptyState');
+  if (!panel||!table) return;
+  const pinnedArr = [...pinnedKeys];
+  if (!pinnedArr.length || !parsed) {
+    panel.style.display='none';
+    if (empty) empty.style.display='flex';
+    return;
+  }
+  panel.style.display='block';
+  if (empty) empty.style.display='none';
+
+  const vals = collectVals(parsed, pinnedArr);
+  table.innerHTML = pinnedArr.map(k => {
+    const vs = vals[k]||[];
+    const uniq = [...new Map(vs.map(v=>[JSON.stringify(v),v])).values()];
+    const paths = getUniquePaths(k);
+    const isSel = selectedKeys.has(k);
+    const matchCount = isSel ? findMatchLines(k).length : 0;
+
+    return `
+<div class="inspect-row">
+  <div class="ir-meta">
+    <div class="ir-key ${isSel?'is-sel':'not-sel'}">${esc(k)}</div>
+    <div class="ir-path">${paths.map(p=>`<div>${esc(p)}</div>`).join('')}</div>
+  </div>
+  <div class="ir-vals ${isSel&&matchCount?'clickable':'dimmed'}" ${isSel&&matchCount?`data-navkey="${k}"`:`title="勾選此屬性後才能跳轉"`}>
+    <div class="val-row">
+      ${uniq.map(renderValHtml).join(`<span class="v-sep"> · </span>`)}
+      <span class="val-count">(${vs.length} 筆)</span>
+    </div>
+    <div id="iNavWrap_${k}" style="display:none" class="nav-btns">
+      <button id="iNavP_${k}" class="nav-btn" data-navprev="${k}" title="上一筆">◀</button>
+      <span id="iNav_${k}" class="nav-counter">–</span>
+      <button id="iNavN_${k}" class="nav-btn" data-navnext="${k}" title="下一筆">▶</button>
+    </div>
+  </div>
+  <div class="ir-nav">
+    <button class="unpin-btn" data-unpin="${k}">取消</button>
+  </div>
+</div>`;
+  }).join('');
+
+  table.querySelectorAll('[data-unpin]').forEach(btn =>
+    btn.addEventListener('click', () => togglePin(btn.dataset.unpin))
+  );
+  table.querySelectorAll('[data-navkey]').forEach(div => {
+    div.addEventListener('click', e => {
+      if (e.target.closest('[data-navprev],[data-navnext]')) return;
+      navigateKey(div.dataset.navkey, null);
+    });
+  });
+  table.querySelectorAll('[data-navprev]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); navigateKey(btn.dataset.navprev, 'prev'); })
+  );
+  table.querySelectorAll('[data-navnext]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); navigateKey(btn.dataset.navnext, 'next'); })
+  );
+  refreshNavCounters();
+}
+
+// ── Toggle panels ─────────────────────────────────────────
+function updateTogglePanels() {
+  const ib=$('inputBody'),  ci=$('chevInput');
+  const ob=$('outputBody'), co=$('chevOutput');
+  if (ib&&ci) { ib.classList.toggle('open',showInput);  ci.classList.toggle('open',showInput); }
+  if (ob&&co) { ob.classList.toggle('open',showOutput); co.classList.toggle('open',showOutput); }
+}
+function updateError() {
+  const el=$('errEl'); if (!el) return;
+  if (parseErr) { el.textContent='解析錯誤：'+parseErr; el.style.display=''; }
+  else el.style.display='none';
+}
+
+// ── Mutations ─────────────────────────────────────────────
+function toggleKey(k, v) {
+  v ? selectedKeys.add(k) : selectedKeys.delete(k);
+  if (nav.key===k) { nav={key:null,matches:[],idx:-1}; applyHighlight(-1); }
+  updateKeyList(); buildOutputLines(); updateInspect();
+}
+function togglePin(k) {
+  pinnedKeys.has(k) ? pinnedKeys.delete(k) : pinnedKeys.add(k);
+  if (nav.key===k && !pinnedKeys.has(k)) { nav={key:null,matches:[],idx:-1}; applyHighlight(-1); }
+  updateKeyList(); updateInspect();
+}
+function loadSample() {
+  raw = SAMPLE;
+  selectedKeys = new Set(['SeqNo','ContractPKNO','ItemEName','ItemBar','RecycleQty','NextTargetDate','RecycleDate']);
+  pinnedKeys = new Set(['ItemBar','RecycleDate']); search=''; nav={key:null,matches:[],idx:-1};
+  parseJSON(raw);
+  $('rawTa').value = raw; $('searchEl').value = '';
+  updateError(); updateKeyList(); buildOutputLines(); updateInspect();
+}
+
+// ── Events ────────────────────────────────────────────────
+$('searchEl').addEventListener('input', e => { search=e.target.value; updateKeyList(); });
+$('rawTa').addEventListener('input', e => {
+  raw=e.target.value; parseJSON(raw);
+  updateError(); updateKeyList(); buildOutputLines(); updateInspect();
+});
+$('btnClear').addEventListener('click', () => {
+  raw='{}'; parsed=null; parseErr=null; allKeys={}; keyTree={};
+  selectedKeys.clear(); pinnedKeys.clear(); search=''; nav={key:null,matches:[],idx:-1};
+  $('rawTa').value='{}'; $('searchEl').value='';
+  updateError(); updateKeyList(); buildOutputLines(); updateInspect();
+});
+$('btnSample').addEventListener('click', loadSample);
+$('btnPaste').addEventListener('click', async e => {
+  e.stopPropagation();
+  try {
+    raw = await navigator.clipboard.readText();
+    $('rawTa').value = raw; parseJSON(raw);
+    updateError(); updateKeyList(); buildOutputLines(); updateInspect();
+  } catch(err) {}
+});
+$('copyBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  navigator.clipboard.writeText(outputLines.join('\n')).then(() => {
+    const b=$('copyBtn'), t=b.textContent;
+    b.textContent='已複製 ✓'; setTimeout(()=>b.textContent=t,1300);
+  });
+});
+$('inputHeader').addEventListener('click', () => { showInput=!showInput; updateTogglePanels(); });
+$('outputHeader').addEventListener('click', () => { showOutput=!showOutput; updateTogglePanels(); });
+
+// ── Init ──────────────────────────────────────────────────
+parseJSON(raw);
+$('rawTa').value = raw;
+updateKeyList(); buildOutputLines(); updateInspect();
+</script>
+</body>
+</html>
