@@ -1,4 +1,5 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lazyembed",
   "compatibility_date": "2026-04-20",
   "main": "src/worker.js",
