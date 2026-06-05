@@ -12,6 +12,20 @@ LazyEmbed 是一個輕量級的靜態網頁專案，用於建立、管理和嵌�
 - **響應式設計** - 完美適配桌面和行動裝置
 - **完全靜態** - 純前端實作，可部署到任何靜態託管服務
 
+## 內建工具
+
+| 工具 | 說明 |
+| --- | --- |
+| **JSON Filter** | 貼入 JSON，勾選屬性即時輸出篩選結果，支援巢狀結構與值分析 |
+| **JSON Table Visualizer** | 將 JSON 陣列轉為可排序、可搜尋的互動式表格 |
+| **資金流可視化** | 視覺化呈現資金流向與收支結構 |
+| **萬用格式轉換器** | JSON ↔ YAML ↔ TOML ↔ CSV 互轉，壓縮 / 美化 / 驗證，並可產生 TypeScript Interface 或 C# Class |
+| **圖片轉換器** | 純前端裁切、壓縮並轉成 WebP / AVIF / JPEG / PNG，支援批次處理 |
+| **密碼與金鑰產生器** | 以 crypto 安全亂數產生密碼，及 UUID v4、Base64 / Hex 金鑰 |
+| **網頁檢查工具** | DNS-over-HTTPS 查詢、Meta / Open Graph 解析、Twitter / Facebook 分享卡片預覽 |
+
+> 所有工具皆為純前端、單一 HTML 檔案，運算在瀏覽器本地完成，資料不上傳至任何伺服器。
+
 ## 專案結構
 
 ```
@@ -27,10 +41,17 @@ LazyEmbed/
 ├── docs/                  # 文檔
 │   ├── examples.md        # 範例小工具說明
 │   └── deployment.md      # 部署指南
-├── widgets/               # 範例小工具
-│   ├── example-clock.html    # 時鐘小工具
-│   ├── example-counter.html  # 計數器小工具
-│   └── example-weather.html  # 天氣小工具
+├── widgets/               # 小工具
+│   ├── json-filter.html            # JSON 屬性篩選
+│   ├── json-table-visualizer.html  # JSON 表格視覺化
+│   ├── cashflow-visualizer.html    # 資金流可視化
+│   ├── format-converter.html       # 萬用格式轉換器
+│   ├── image-converter.html        # 圖片轉換器
+│   ├── password-generator.html     # 密碼與金鑰產生器
+│   ├── web-inspector.html          # 網頁檢查工具
+│   ├── example-clock.html          # 範例：時鐘
+│   ├── example-counter.html        # 範例：計數器
+│   └── example-weather.html        # 範例：天氣
 └── README.md
 ```
 

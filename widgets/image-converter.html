@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圖片轉換器 — Web-Friendly Image Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:#0d0f12; --bg2:#13161b; --bg3:#1a1e25; --bg4:#222730;
+    --border:#2a2f3a; --border2:#333a47;
+    --text:#cdd5e0; --text2:#7e8a9e; --text3:#4a5568;
+    --accent:#f87171; --accent-bg:rgba(248,113,113,.10);
+    --ok:#22c55e; --warn:#f59e0b; --err:#f87171;
+    --radius:8px; --radius-sm:5px;
+    --mono:'JetBrains Mono','Fira Code',monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+  }
+
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5; }
+  .layout { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+  /* ── Header ── */
+  .header { display:flex; align-items:center; gap:12px; padding:0 16px; height:48px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+  .back-btn { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); text-decoration:none; padding:5px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); transition:all .15s; }
+  .back-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .sep { color:var(--text3); font-size:11px; }
+  .logo { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:13px; font-weight:600; }
+  .logo-icon { width:22px; height:22px; background:var(--accent); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#2a0d0d; flex-shrink:0; }
+  .spacer { flex:1; }
+  .hbtn { font-size:12px; padding:5px 12px; border:1px solid var(--border2); border-radius:var(--radius-sm); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+  .hbtn:hover { border-color:var(--accent); color:var(--accent); }
+  .hbtn.danger:hover { border-color:var(--err); color:var(--err); }
+
+  /* ── Body ── */
+  .body { flex:1; display:grid; grid-template-columns:1fr 320px; overflow:hidden; }
+  .stage { display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+  .panel { border-left:1px solid var(--border); background:var(--bg2); overflow-y:auto; padding:18px; }
+  .panel::-webkit-scrollbar { width:5px; } .panel::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+
+  /* ── Drop / preview ── */
+  .preview-area { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; padding:24px; position:relative; }
+  .dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; width:100%; max-width:460px; padding:48px 32px; border:2px dashed var(--border2); border-radius:14px; text-align:center; transition:all .18s; cursor:pointer; }
+  .dropzone:hover, .dropzone.over { border-color:var(--accent); background:var(--accent-bg); }
+  .dz-icon { font-size:42px; opacity:.6; }
+  .dz-title { font-size:16px; font-weight:600; color:var(--text); }
+  .dz-sub { font-size:12.5px; color:var(--text3); line-height:1.7; }
+  .dz-formats { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:4px; }
+
+  .img-wrap { position:relative; display:inline-block; line-height:0; box-shadow:0 8px 40px rgba(0,0,0,.5); }
+  .img-wrap img { display:block; max-width:100%; max-height:calc(100vh - 230px); }
+  .crop-layer { position:absolute; inset:0; cursor:crosshair; }
+  .crop-shade { position:absolute; inset:0; background:rgba(13,15,18,.62); }
+  .crop-box { position:absolute; box-shadow:0 0 0 9999px rgba(13,15,18,.62); border:1px solid var(--accent); cursor:move; }
+  .crop-box::after { content:''; position:absolute; inset:0; background-image:linear-gradient(var(--border2) 1px,transparent 1px),linear-gradient(90deg,var(--border2) 1px,transparent 1px); background-size:33.33% 33.33%; opacity:.35; pointer-events:none; }
+  .handle { position:absolute; width:12px; height:12px; background:var(--accent); border:2px solid var(--bg); border-radius:2px; }
+  .handle.nw{top:-6px;left:-6px;cursor:nwse-resize;} .handle.ne{top:-6px;right:-6px;cursor:nesw-resize;}
+  .handle.sw{bottom:-6px;left:-6px;cursor:nesw-resize;} .handle.se{bottom:-6px;right:-6px;cursor:nwse-resize;}
+
+  /* ── Filmstrip ── */
+  .filmstrip { flex-shrink:0; display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border); background:var(--bg2); overflow-x:auto; min-height:74px; align-items:center; }
+  .filmstrip:empty::before { content:''; }
+  .film-thumb { position:relative; width:54px; height:54px; border-radius:var(--radius-sm); overflow:hidden; border:2px solid transparent; cursor:pointer; flex-shrink:0; background:var(--bg4); }
+  .film-thumb img { width:100%; height:100%; object-fit:cover; }
+  .film-thumb.active { border-color:var(--accent); }
+  .film-x { position:absolute; top:1px; right:1px; width:16px; height:16px; background:rgba(13,15,18,.8); border-radius:3px; color:var(--text2); font-size:11px; display:flex; align-items:center; justify-content:center; line-height:1; }
+  .film-x:hover { color:var(--err); }
+  .film-add { width:54px; height:54px; flex-shrink:0; border:1px dashed var(--border2); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--text3); cursor:pointer; }
+  .film-add:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ── Panel controls ── */
+  .p-sec { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin:0 0 11px; }
+  .p-group { margin-bottom:22px; }
+  .fmt-seg { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .fmt-seg button { font-family:var(--mono); font-size:12px; padding:8px 0; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); cursor:pointer; transition:all .15s; }
+  .fmt-seg button:hover:not(:disabled) { border-color:var(--border2); }
+  .fmt-seg button.on { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
+  .fmt-seg button:disabled { opacity:.32; cursor:not-allowed; }
+
+  .row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .row label { font-size:12.5px; color:var(--text2); flex-shrink:0; }
+  .row .val { font-family:var(--mono); font-size:12px; color:var(--accent); margin-left:auto; }
+  input[type=range] { -webkit-appearance:none; appearance:none; flex:1; height:5px; background:var(--bg4); border-radius:3px; outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--accent); cursor:pointer; }
+  input[type=range]:disabled { opacity:.4; } input[type=range]:disabled::-webkit-slider-thumb { cursor:not-allowed; }
+  input[type=number] { width:78px; font-family:var(--mono); font-size:12px; padding:6px 8px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); outline:none; }
+  input[type=number]:focus { border-color:var(--accent); }
+  .toggle { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+  .toggle input { accent-color:var(--accent); width:15px; height:15px; }
+  .preset-row { display:flex; gap:6px; margin-top:8px; }
+  .preset-row button { flex:1; font-family:var(--mono); font-size:11px; padding:5px 0; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--text3); cursor:pointer; transition:all .15s; }
+  .preset-row button:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ── Output card ── */
+  .out-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
+  .out-stat { display:flex; justify-content:space-between; font-size:12px; padding:4px 0; }
+  .out-stat .k { color:var(--text3); } .out-stat .v { font-family:var(--mono); color:var(--text); }
+  .saved { text-align:center; font-family:var(--mono); font-weight:600; padding:8px; margin:10px 0; border-radius:var(--radius-sm); }
+  .saved.good { color:var(--ok); background:rgba(34,197,94,.1); }
+  .saved.bad { color:var(--warn); background:rgba(245,158,11,.1); }
+  .dl-btn { width:100%; padding:10px; font-family:var(--sans); font-size:13px; font-weight:600; border:none; border-radius:var(--radius-sm); cursor:pointer; transition:all .15s; margin-top:6px; }
+  .dl-primary { background:var(--accent); color:#2a0d0d; } .dl-primary:hover { filter:brightness(1.08); }
+  .dl-ghost { background:transparent; border:1px solid var(--border2); color:var(--text2); } .dl-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .note { font-size:11px; color:var(--text3); line-height:1.6; margin-top:10px; }
+  .hint-bar { flex-shrink:0; padding:7px 16px; font-family:var(--mono); font-size:11px; color:var(--text3); border-top:1px solid var(--border); background:var(--bg2); }
+
+  @media (max-width:820px){ .body{grid-template-columns:1fr;} .panel{border-left:none;border-top:1px solid var(--border);max-height:46vh;} .img-wrap img{max-height:38vh;} }
+</style>
+</head>
+<body>
+<div class="layout">
+  <header class="header">
+    <a class="back-btn" href="../index.html">&#8592; 返回</a>
+    <span class="sep">/</span>
+    <div class="logo"><div class="logo-icon">🖼</div> 圖片轉換器</div>
+    <div class="spacer"></div>
+    <button class="hbtn danger" id="btnClear">清除全部</button>
+  </header>
+
+  <div class="body">
+    <div class="stage">
+      <div class="preview-area" id="previewArea">
+        <div class="dropzone" id="dropzone">
+          <div class="dz-icon">🖼</div>
+          <div class="dz-title">拖曳圖片到這裡</div>
+          <div class="dz-sub">或點擊選擇檔案 · 也可直接貼上（Ctrl/⌘ + V）<br>裁切、壓縮、轉檔，全部在瀏覽器本地完成</div>
+          <div class="dz-formats">PNG · JPEG · WebP · GIF · BMP → WebP / AVIF / JPEG / PNG</div>
+        </div>
+      </div>
+      <div class="filmstrip" id="filmstrip"></div>
+    </div>
+
+    <aside class="panel">
+      <div class="p-group">
+        <div class="p-sec">輸出格式</div>
+        <div class="fmt-seg" id="fmtSeg">
+          <button data-fmt="image/webp" class="on">WebP</button>
+          <button data-fmt="image/avif">AVIF</button>
+          <button data-fmt="image/jpeg">JPEG</button>
+          <button data-fmt="image/png">PNG</button>
+        </div>
+      </div>
+
+      <div class="p-group">
+        <div class="p-sec">品質</div>
+        <div class="row">
+          <input type="range" id="quality" min="10" max="100" value="80">
+          <span class="val" id="qualityVal">80%</span>
+        </div>
+        <div class="note" id="qualityNote">PNG 為無損格式，不套用品質設定。</div>
+      </div>
+
+      <div class="p-group">
+        <div class="p-sec">尺寸調整</div>
+        <label class="toggle" style="margin-bottom:12px"><input type="checkbox" id="resizeOn"> 限制最大尺寸（保持比例）</label>
+        <div class="row"><label>最大寬度</label><input type="number" id="maxW" min="1" placeholder="—" disabled> <span style="color:var(--text3);font-size:11px">px</span></div>
+        <div class="row"><label>最大高度</label><input type="number" id="maxH" min="1" placeholder="—" disabled> <span style="color:var(--text3);font-size:11px">px</span></div>
+        <div class="preset-row">
+          <button data-preset="1920">1920</button>
+          <button data-preset="1280">1280</button>
+          <button data-preset="800">800</button>
+          <button data-preset="400">400</button>
+        </div>
+      </div>
+
+      <div class="p-group">
+        <div class="p-sec">裁切</div>
+        <label class="toggle" style="margin-bottom:10px"><input type="checkbox" id="cropOn"> 啟用裁切（在圖片上拖曳）</label>
+        <button class="dl-btn dl-ghost" id="btnResetCrop" style="margin-top:0">重設裁切</button>
+      </div>
+
+      <div class="p-group" id="outGroup" style="display:none">
+        <div class="p-sec">輸出結果</div>
+        <div class="out-card">
+          <div class="out-stat"><span class="k">原始</span><span class="v" id="oOrig">—</span></div>
+          <div class="out-stat"><span class="k">輸出</span><span class="v" id="oOut">—</span></div>
+          <div class="saved" id="oSaved">—</div>
+          <button class="dl-btn dl-primary" id="btnDownload">下載這張</button>
+          <button class="dl-btn dl-ghost" id="btnDownloadAll">下載全部（<span id="cnt">0</span>）</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="hint-bar" id="hintBar">尚未載入圖片 · 所有處理皆在瀏覽器本地執行，圖片不會上傳</div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
+<script>
+const $ = id => document.getElementById(id);
+let items = [];          // { id, name, img, origSize, origType, crop, out:{blob,url,w,h} }
+let activeId = null;
+let uid = 0;
+const settings = { format:'image/webp', quality:0.8, resize:false, maxW:null, maxH:null, crop:false };
+
+// ── format support detection ──
+function supportsType(type){
+  const c=document.createElement('canvas'); c.width=2; c.height=2;
+  return new Promise(res => { try { c.toBlob(b => res(!!b && b.type===type), type, .8); } catch(e){ res(false); } });
+}
+
+// ── helpers ──
+const fmtBytes = n => n<1024 ? n+' B' : n<1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(2)+' MB';
+const extOf = t => ({ 'image/webp':'webp','image/avif':'avif','image/jpeg':'jpg','image/png':'png' }[t]||'img');
+const baseName = n => n.replace(/\.[^.]+$/,'') || 'image';
+
+// ── load files ──
+function loadFiles(files){
+  const imgs = [...files].filter(f => f.type.startsWith('image/'));
+  let firstNew = null;
+  let pending = imgs.length;
+  if(!pending) return;
+  imgs.forEach(file => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const item = { id:++uid, name:file.name, img, srcUrl:url, origSize:file.size, origType:file.type, crop:null, out:null };
+      items.push(item);
+      if(firstNew===null){ firstNew = item.id; }
+      if(--pending===0){ if(firstNew!==null) setActive(firstNew); renderFilmstrip(); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); if(--pending===0){ if(firstNew!==null) setActive(firstNew); renderFilmstrip(); } };
+    img.src = url;
+  });
+}
+
+function setActive(id){
+  activeId = id;
+  renderFilmstrip();
+  renderPreview();
+  process();
+}
+function activeItem(){ return items.find(i => i.id===activeId) || null; }
+
+// ── filmstrip ──
+function renderFilmstrip(){
+  const fs = $('filmstrip');
+  if(!items.length){ fs.innerHTML=''; return; }
+  fs.innerHTML = items.map(it =>
+    `<div class="film-thumb ${it.id===activeId?'active':''}" data-id="${it.id}">
+       <img src="${it.srcUrl}" alt="">
+       <div class="film-x" data-x="${it.id}">×</div>
+     </div>`).join('') + `<div class="film-add" id="filmAdd">＋</div>`;
+  fs.querySelectorAll('.film-thumb').forEach(t => t.addEventListener('click', e => {
+    if(e.target.closest('[data-x]')) return;
+    setActive(+t.dataset.id);
+  }));
+  fs.querySelectorAll('[data-x]').forEach(b => b.addEventListener('click', () => removeItem(+b.dataset.x)));
+  $('filmAdd').addEventListener('click', () => $('fileInput').click());
+}
+function removeItem(id){
+  const it = items.find(i => i.id===id);
+  if(it){ URL.revokeObjectURL(it.srcUrl); if(it.out) URL.revokeObjectURL(it.out.url); }
+  items = items.filter(i => i.id!==id);
+  if(activeId===id) activeId = items.length ? items[0].id : null;
+  if(!items.length){ resetToEmpty(); return; }
+  renderFilmstrip(); renderPreview(); process();
+}
+function resetToEmpty(){
+  items.forEach(i => { URL.revokeObjectURL(i.srcUrl); if(i.out) URL.revokeObjectURL(i.out.url); });
+  items = []; activeId=null;
+  $('previewArea').innerHTML = `<div class="dropzone" id="dropzone">
+      <div class="dz-icon">🖼</div>
+      <div class="dz-title">拖曳圖片到這裡</div>
+      <div class="dz-sub">或點擊選擇檔案 · 也可直接貼上（Ctrl/⌘ + V）<br>裁切、壓縮、轉檔，全部在瀏覽器本地完成</div>
+      <div class="dz-formats">PNG · JPEG · WebP · GIF · BMP → WebP / AVIF / JPEG / PNG</div>
+    </div>`;
+  wireDropzone();
+  $('filmstrip').innerHTML='';
+  $('outGroup').style.display='none';
+  $('hintBar').textContent = '尚未載入圖片 · 所有處理皆在瀏覽器本地執行，圖片不會上傳';
+}
+
+// ── preview + crop ──
+let crop = null; // {x,y,w,h} fractions 0..1 (mirror of activeItem.crop)
+function renderPreview(){
+  const it = activeItem();
+  const area = $('previewArea');
+  if(!it){ resetToEmpty(); return; }
+  crop = it.crop;
+  area.innerHTML = `<div class="img-wrap" id="imgWrap"><img id="previewImg" src="${it.srcUrl}" alt=""><div class="crop-layer" id="cropLayer" style="display:${settings.crop?'block':'none'}"></div></div>`;
+  drawCropBox();
+  wireCrop();
+}
+function drawCropBox(){
+  const layer = $('cropLayer'); if(!layer) return;
+  layer.style.display = settings.crop ? 'block' : 'none';
+  if(!settings.crop){ layer.innerHTML=''; return; }
+  if(!crop){ layer.innerHTML = `<div class="crop-shade"></div>`; return; }
+  const l = (crop.x*100).toFixed(2), t=(crop.y*100).toFixed(2), w=(crop.w*100).toFixed(2), h=(crop.h*100).toFixed(2);
+  layer.innerHTML = `<div class="crop-box" id="cropBox" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%">
+      <div class="handle nw" data-h="nw"></div><div class="handle ne" data-h="ne"></div>
+      <div class="handle sw" data-h="sw"></div><div class="handle se" data-h="se"></div>
+    </div>`;
+}
+function wireCrop(){
+  const layer = $('cropLayer'); if(!layer) return;
+  const rect = () => layer.getBoundingClientRect();
+  const clamp = v => Math.max(0, Math.min(1, v));
+  let mode=null, start=null, base=null, hkey=null;
+
+  const onDown = e => {
+    e.preventDefault();
+    const r = rect();
+    const px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
+    const handle = e.target.closest('[data-h]');
+    if(handle){ mode='resize'; hkey=handle.dataset.h; base={...crop}; }
+    else if(e.target.closest('#cropBox')){ mode='move'; start={px,py}; base={...crop}; }
+    else { mode='new'; start={px:clamp(px),py:clamp(py)}; crop={x:start.px,y:start.py,w:0,h:0}; }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+  const onMove = e => {
+    const r = rect();
+    const px = clamp((e.clientX - r.left)/r.width), py = clamp((e.clientY - r.top)/r.height);
+    if(mode==='new'){
+      crop = { x:Math.min(start.px,px), y:Math.min(start.py,py), w:Math.abs(px-start.px), h:Math.abs(py-start.py) };
+    } else if(mode==='move'){
+      const dx=px-start.px, dy=py-start.py;
+      crop = { ...base, x:clamp(base.x+dx), y:clamp(base.y+dy) };
+      crop.x = Math.min(crop.x, 1-base.w); crop.y = Math.min(crop.y, 1-base.h);
+    } else if(mode==='resize'){
+      let {x,y,w,h}=base; let x2=x+w, y2=y+h;
+      if(hkey.includes('w')) x=px; if(hkey.includes('e')) x2=px;
+      if(hkey.includes('n')) y=py; if(hkey.includes('s')) y2=py;
+      crop = { x:Math.min(x,x2), y:Math.min(y,y2), w:Math.abs(x2-x), h:Math.abs(y2-y) };
+    }
+    drawCropBox();
+  };
+  const onUp = () => {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    if(crop && (crop.w<0.01 || crop.h<0.01)) crop=null;
+    const it = activeItem(); if(it) it.crop = crop;
+    drawCropBox(); process();
+  };
+  layer.addEventListener('pointerdown', onDown);
+}
+
+// ── stepped high-quality scaling ──
+function scaleCanvas(img, sx, sy, sw, sh, dw, dh, fillWhite){
+  let cur = document.createElement('canvas'); cur.width=sw; cur.height=sh;
+  cur.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+  let cw=sw, ch=sh;
+  while(cw > dw*2 && ch > dh*2){
+    const nw=Math.max(dw, Math.round(cw/2)), nh=Math.max(dh, Math.round(ch/2));
+    const tmp=document.createElement('canvas'); tmp.width=nw; tmp.height=nh;
+    const ctx=tmp.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.drawImage(cur, 0,0,cw,ch, 0,0,nw,nh);
+    cur=tmp; cw=nw; ch=nh;
+  }
+  const out=document.createElement('canvas'); out.width=dw; out.height=dh;
+  const octx=out.getContext('2d');
+  if(fillWhite){ octx.fillStyle='#fff'; octx.fillRect(0,0,dw,dh); }
+  octx.imageSmoothingEnabled=true; octx.imageSmoothingQuality='high';
+  octx.drawImage(cur, 0,0,cw,ch, 0,0,dw,dh);
+  return out;
+}
+
+// ── process active image ──
+let procTimer=null;
+function process(){ clearTimeout(procTimer); procTimer=setTimeout(doProcess, 140); }
+async function doProcess(){
+  const it = activeItem();
+  if(!it){ return; }
+  const natW=it.img.naturalWidth, natH=it.img.naturalHeight;
+  let sx=0, sy=0, sw=natW, sh=natH;
+  if(it.crop){
+    sx=Math.round(it.crop.x*natW); sy=Math.round(it.crop.y*natH);
+    sw=Math.max(1,Math.round(it.crop.w*natW)); sh=Math.max(1,Math.round(it.crop.h*natH));
+  }
+  let dw=sw, dh=sh;
+  if(settings.resize && (settings.maxW || settings.maxH)){
+    const mw=settings.maxW||Infinity, mh=settings.maxH||Infinity;
+    const scale=Math.min(1, mw/sw, mh/sh);
+    dw=Math.max(1,Math.round(sw*scale)); dh=Math.max(1,Math.round(sh*scale));
+  }
+  const fillWhite = settings.format==='image/jpeg';
+  const canvas = scaleCanvas(it.img, sx, sy, sw, sh, dw, dh, fillWhite);
+  const q = settings.format==='image/png' ? undefined : settings.quality;
+  const blob = await new Promise(r => canvas.toBlob(r, settings.format, q));
+  if(!blob){ $('hintBar').textContent='⚠ 此瀏覽器不支援輸出 '+extOf(settings.format).toUpperCase()+' 格式'; return; }
+  if(it.out) URL.revokeObjectURL(it.out.url);
+  it.out = { blob, url:URL.createObjectURL(blob), w:dw, h:dh };
+  renderOutput(it);
+}
+function renderOutput(it){
+  if(!it.out) return;
+  $('outGroup').style.display='';
+  $('oOrig').textContent = `${it.img.naturalWidth}×${it.img.naturalHeight} · ${fmtBytes(it.origSize)}`;
+  $('oOut').textContent  = `${it.out.w}×${it.out.h} · ${fmtBytes(it.out.blob.size)}`;
+  const diff = it.origSize>0 ? (1 - it.out.blob.size/it.origSize) : 0;
+  const sv=$('oSaved');
+  if(diff>=0){ sv.className='saved good'; sv.textContent=`省下 ${(diff*100).toFixed(0)}%`; }
+  else { sv.className='saved bad'; sv.textContent=`增加 ${(-diff*100).toFixed(0)}%`; }
+  $('cnt').textContent = items.length;
+  $('hintBar').textContent = `${it.name} · ${extOf(settings.format).toUpperCase()} · 品質 ${Math.round(settings.quality*100)}%`;
+}
+
+// ── downloads ──
+function downloadItem(it){
+  if(!it.out) return;
+  const a=document.createElement('a');
+  a.href=it.out.url; a.download=`${baseName(it.name)}.${extOf(settings.format)}`; a.click();
+}
+async function downloadAll(){
+  const prevActive = activeId;
+  for(const it of items){
+    // ensure processed with current settings
+    activeId = it.id;
+    await doProcess();
+    downloadItem(it);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  activeId = prevActive; renderFilmstrip(); renderPreview();
+  const it = activeItem(); if(it) await doProcess();
+}
+
+// ── settings wiring ──
+$('fmtSeg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  if(b.disabled) return;
+  $('fmtSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); settings.format=b.dataset.fmt;
+  const isPng = settings.format==='image/png';
+  $('quality').disabled = isPng;
+  $('qualityNote').style.display = isPng ? 'block' : 'none';
+  process();
+}));
+$('quality').addEventListener('input', e => { settings.quality=+e.target.value/100; $('qualityVal').textContent=e.target.value+'%'; process(); });
+$('resizeOn').addEventListener('change', e => {
+  settings.resize=e.target.checked;
+  $('maxW').disabled=!settings.resize; $('maxH').disabled=!settings.resize;
+  if(settings.resize && !settings.maxW && !settings.maxH){ settings.maxW=1280; $('maxW').value=1280; }
+  process();
+});
+$('maxW').addEventListener('input', e => { settings.maxW = e.target.value ? +e.target.value : null; process(); });
+$('maxH').addEventListener('input', e => { settings.maxH = e.target.value ? +e.target.value : null; process(); });
+document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+  if(!settings.resize){ settings.resize=true; $('resizeOn').checked=true; $('maxW').disabled=false; $('maxH').disabled=false; }
+  settings.maxW=+b.dataset.preset; $('maxW').value=b.dataset.preset; settings.maxH=null; $('maxH').value=''; process();
+}));
+$('cropOn').addEventListener('change', e => { settings.crop=e.target.checked; renderPreview(); });
+$('btnResetCrop').addEventListener('click', () => { crop=null; const it=activeItem(); if(it) it.crop=null; drawCropBox(); process(); });
+$('btnDownload').addEventListener('click', () => { const it=activeItem(); if(it) downloadItem(it); });
+$('btnDownloadAll').addEventListener('click', downloadAll);
+$('btnClear').addEventListener('click', resetToEmpty);
+
+// ── input / drop / paste ──
+$('fileInput').addEventListener('change', e => { loadFiles(e.target.files); e.target.value=''; });
+function wireDropzone(){
+  const dz = $('dropzone'); if(!dz) return;
+  dz.addEventListener('click', () => $('fileInput').click());
+}
+const stage = document.querySelector('.stage');
+['dragenter','dragover'].forEach(ev => stage.addEventListener(ev, e => { e.preventDefault(); const d=$('dropzone'); if(d) d.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => stage.addEventListener(ev, e => { e.preventDefault(); const d=$('dropzone'); if(d) d.classList.remove('over'); }));
+stage.addEventListener('drop', e => { if(e.dataTransfer.files.length) loadFiles(e.dataTransfer.files); });
+window.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.items||[])].filter(i=>i.type.startsWith('image/')).map(i=>i.getAsFile()).filter(Boolean);
+  if(files.length) loadFiles(files);
+});
+
+// ── init ──
+(async () => {
+  const [webp, avif] = await Promise.all([supportsType('image/webp'), supportsType('image/avif')]);
+  const setDisabled = (fmt, ok) => { const b=$('fmtSeg').querySelector(`[data-fmt="${fmt}"]`); if(!ok){ b.disabled=true; b.title='此瀏覽器不支援編碼此格式'; b.textContent+=' ✕'; } };
+  setDisabled('image/webp', webp);
+  setDisabled('image/avif', avif);
+  if(!webp){ // fall back default to jpeg
+    settings.format='image/jpeg';
+    $('fmtSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    $('fmtSeg').querySelector('[data-fmt="image/jpeg"]').classList.add('on');
+  }
+})();
+wireDropzone();
+</script>
+</body>
+</html>

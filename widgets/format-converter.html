@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萬用格式轉換器 — JSON · YAML · TOML · CSV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:#0d0f12; --bg2:#13161b; --bg3:#1a1e25; --bg4:#222730;
+    --border:#2a2f3a; --border2:#333a47;
+    --text:#cdd5e0; --text2:#7e8a9e; --text3:#4a5568;
+    --accent:#f59e0b; --accent-bg:rgba(245,158,11,.10);
+    --ok:#22c55e; --ok-bg:rgba(34,197,94,.08);
+    --err:#f87171; --err-bg:rgba(248,113,113,.08);
+    --num-c:#4ade80; --str-c:#f472b6; --bool-c:#fb923c; --null-c:#7e8a9e; --key-c:#60a5fa;
+    --radius:6px; --radius-sm:4px;
+    --mono:'JetBrains Mono','Fira Code',monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+  }
+
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5; }
+
+  .layout { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+  /* ── Header ── */
+  .header { display:flex; align-items:center; gap:12px; padding:0 16px; height:48px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+  .back-btn { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); text-decoration:none; padding:5px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); transition:all .15s; flex-shrink:0; }
+  .back-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .sep { color:var(--text3); font-size:11px; }
+  .logo { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); }
+  .logo-icon { width:22px; height:22px; background:var(--accent); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#1a1205; flex-shrink:0; }
+  .spacer { flex:1; }
+  .hbtn { font-size:12px; padding:5px 12px; border:1px solid var(--border2); border-radius:var(--radius-sm); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+  .hbtn:hover { border-color:var(--accent); color:var(--accent); }
+  .hbtn.danger:hover { border-color:var(--err); color:var(--err); }
+
+  /* ── Toolbar ── */
+  .toolbar { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg2); flex-wrap:wrap; flex-shrink:0; }
+  .fmt-group { display:flex; align-items:center; gap:8px; }
+  .fmt-label { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
+  select.fmt { font-family:var(--mono); font-size:12px; padding:5px 8px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius-sm); color:var(--text); cursor:pointer; outline:none; }
+  select.fmt:focus { border-color:var(--accent); }
+  .swap-btn { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius-sm); color:var(--text2); cursor:pointer; transition:all .15s; font-size:13px; }
+  .swap-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+  .swap-btn:disabled { opacity:.3; cursor:not-allowed; }
+  .tb-actions { display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .tbtn { font-size:11px; padding:5px 11px; border:1px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+  .tbtn:hover { border-color:var(--accent); color:var(--accent); }
+  .tbtn.ok:hover { border-color:var(--ok); color:var(--ok); }
+
+  /* ── Panes ── */
+  .panes { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); overflow:hidden; }
+  .pane { display:flex; flex-direction:column; background:var(--bg); overflow:hidden; min-width:0; }
+  .pane-head { display:flex; align-items:center; justify-content:space-between; padding:7px 14px; background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .pane-title { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); display:flex; align-items:center; gap:8px; }
+  .pane-meta { font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .pane-body { flex:1; overflow:auto; }
+  .pane-body::-webkit-scrollbar { width:5px; height:5px; }
+  .pane-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+  textarea.src { width:100%; height:100%; min-height:100%; resize:none; border:none; outline:none; background:transparent; color:var(--text); font-family:var(--mono); font-size:12px; line-height:1.7; padding:12px 14px; }
+  textarea.src::placeholder { color:var(--text3); }
+  pre.out { margin:0; padding:12px 14px; font-family:var(--mono); font-size:12px; line-height:1.7; white-space:pre; color:var(--text); min-height:100%; }
+  pre.out.empty { color:var(--text3); white-space:pre-wrap; }
+
+  /* json highlight */
+  .j-key{color:var(--key-c);} .j-str{color:var(--str-c);} .j-num{color:var(--num-c);}
+  .j-bool{color:var(--bool-c);} .j-null{color:var(--null-c);font-style:italic;} .j-punc{color:var(--text3);}
+
+  /* ── Status bar ── */
+  .statusbar { flex-shrink:0; padding:7px 16px; font-family:var(--mono); font-size:11.5px; border-top:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; gap:8px; min-height:32px; }
+  .statusbar.ok { color:var(--ok); }
+  .statusbar.err { color:var(--err); background:var(--err-bg); }
+  .statusbar.idle { color:var(--text3); }
+
+  @media (max-width:760px) {
+    .panes { grid-template-columns:1fr; grid-template-rows:1fr 1fr; }
+    .tb-actions { margin-left:0; width:100%; flex-wrap:wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <header class="header">
+    <a class="back-btn" href="../index.html">&#8592; 返回</a>
+    <span class="sep">/</span>
+    <div class="logo"><div class="logo-icon">⇄</div> 格式轉換器</div>
+    <div class="spacer"></div>
+    <button class="hbtn" id="btnSample">載入範例</button>
+    <button class="hbtn danger" id="btnClear">清除</button>
+  </header>
+
+  <div class="toolbar">
+    <div class="fmt-group">
+      <span class="fmt-label">來源</span>
+      <select class="fmt" id="srcFmt">
+        <option value="json">JSON</option>
+        <option value="yaml">YAML</option>
+        <option value="toml">TOML</option>
+        <option value="csv">CSV</option>
+      </select>
+    </div>
+    <button class="swap-btn" id="swapBtn" title="交換來源與目標">⇆</button>
+    <div class="fmt-group">
+      <span class="fmt-label">目標</span>
+      <select class="fmt" id="tgtFmt">
+        <option value="json">JSON</option>
+        <option value="yaml">YAML</option>
+        <option value="toml">TOML</option>
+        <option value="csv">CSV</option>
+        <option value="ts">TypeScript Interface</option>
+        <option value="csharp">C# Class</option>
+      </select>
+    </div>
+    <div class="tb-actions">
+      <button class="tbtn" id="btnPretty">美化 JSON</button>
+      <button class="tbtn" id="btnMinify">壓縮 JSON</button>
+      <button class="tbtn ok" id="btnValidate">驗證來源</button>
+    </div>
+  </div>
+
+  <div class="panes">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">輸入 <span id="srcTag" style="color:var(--accent)">JSON</span></span>
+        <span class="pane-meta"><button class="tbtn" id="btnPaste" style="padding:2px 8px;font-size:10px">貼上</button> <span id="srcMeta"></span></span>
+      </div>
+      <div class="pane-body">
+        <textarea class="src" id="input" spellcheck="false" placeholder="在此貼入或輸入資料…"></textarea>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">輸出 <span id="tgtTag" style="color:var(--accent)">JSON</span></span>
+        <span class="pane-meta"><span id="tgtMeta"></span> <button class="tbtn" id="btnCopy" style="padding:2px 8px;font-size:10px">複製</button> <button class="tbtn" id="btnDownload" style="padding:2px 8px;font-size:10px">下載</button></span>
+      </div>
+      <div class="pane-body">
+        <pre class="out empty" id="output">// 輸出會顯示在這裡</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar idle" id="status">就緒 · 所有轉換皆在瀏覽器本地執行</div>
+</div>
+
+<script type="module">
+// ── External libs (lazy-loaded on demand, gracefully degrades offline) ──
+let _yaml=null, _toml=null;
+async function getYaml(){
+  if(_yaml) return _yaml;
+  const m = await import('https://esm.sh/js-yaml@4.1.0');
+  _yaml = (m && m.load) ? m : (m.default || m);
+  return _yaml;
+}
+async function getToml(){
+  if(_toml) return _toml;
+  const m = await import('https://esm.sh/smol-toml@1.3.0');
+  _toml = (m && m.parse) ? m : (m.default || m);
+  return _toml;
+}
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const FMT_NAME = { json:'JSON', yaml:'YAML', toml:'TOML', csv:'CSV', ts:'TypeScript', csharp:'C#' };
+const DATA_FMTS = ['json','yaml','toml','csv'];
+
+let state = { src:'json', tgt:'json', indent:2, lastOutput:'' };
+
+// ── CSV ───────────────────────────────────────────────────
+function detectDelim(text){
+  const line = text.split(/\r?\n/).find(l=>l.trim()) || '';
+  const counts = { ',':0, ';':0, '\t':0 };
+  let inQ=false;
+  for(const c of line){ if(c==='"') inQ=!inQ; else if(!inQ && counts[c]!==undefined) counts[c]++; }
+  return Object.keys(counts).reduce((a,b)=>counts[b]>counts[a]?b:a, ',');
+}
+function parseCSVRows(text, delim){
+  const rows=[]; let row=[], field='', i=0, inQ=false;
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i+=2; continue; } inQ=false; i++; continue; }
+      field+=c; i++; continue;
+    }
+    if(c==='"'){ inQ=true; i++; continue; }
+    if(c===delim){ row.push(field); field=''; i++; continue; }
+    if(c==='\r'){ i++; continue; }
+    if(c==='\n'){ row.push(field); field=''; rows.push(row); row=[]; i++; continue; }
+    field+=c; i++;
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length===1 && r[0].trim()===''));
+}
+function coerce(v){
+  if(v===undefined || v==='') return '';
+  if(/^-?\d+$/.test(v)) { const n=parseInt(v,10); return String(n)===v?n:v; }
+  if(/^-?\d*\.\d+$/.test(v)) return parseFloat(v);
+  if(v==='true') return true;
+  if(v==='false') return false;
+  if(v==='null') return null;
+  return v;
+}
+function csvToData(text){
+  const delim = detectDelim(text);
+  const rows = parseCSVRows(text, delim);
+  if(!rows.length) return [];
+  const header = rows[0];
+  return rows.slice(1).map(r => {
+    const o={}; header.forEach((h,i)=>{ o[h]=coerce(r[i]); }); return o;
+  });
+}
+function dataToCsv(data){
+  if(!Array.isArray(data)) throw new Error('CSV 輸出需要陣列資料（array of objects）');
+  if(!data.length) return '';
+  const escCell = v => {
+    if(v===null || v===undefined) v='';
+    else if(typeof v==='object') v=JSON.stringify(v);
+    else v=String(v);
+    return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+  };
+  const allObj = data.every(d => d && typeof d==='object' && !Array.isArray(d));
+  if(!allObj){
+    return ['value', ...data.map(escCell)].join('\n');
+  }
+  const headers=[]; const seen=new Set();
+  data.forEach(o => Object.keys(o).forEach(k => { if(!seen.has(k)){ seen.add(k); headers.push(k); } }));
+  const lines = [headers.map(escCell).join(',')];
+  data.forEach(o => lines.push(headers.map(h => escCell(o[h])).join(',')));
+  return lines.join('\n');
+}
+
+// ── Type generators ───────────────────────────────────────
+function pascal(s){
+  const p = String(s).replace(/(^|[_\-\s]+)([A-Za-z0-9])/g, (_,__,c)=>c.toUpperCase()).replace(/[^A-Za-z0-9]/g,'');
+  return /^[0-9]/.test(p) ? '_'+p : p;
+}
+function jsonToTS(root, rootName){
+  const out=[]; const used=new Set();
+  const uniq = base => { base = pascal(base) || 'Item'; let n=base, i=2; while(used.has(n)){ n=base+(i++); } used.add(n); return n; };
+  const typeOf = (v, hint) => {
+    if(v===null) return 'null';
+    switch(typeof v){
+      case 'string': return 'string';
+      case 'number': return 'number';
+      case 'boolean': return 'boolean';
+      case 'object': return Array.isArray(v) ? arrType(v, hint) : objType(v, hint);
+      default: return 'any';
+    }
+  };
+  function arrType(arr, hint){
+    if(!arr.length) return 'any[]';
+    const singular = hint.replace(/ies$/,'y').replace(/s$/,'') || hint;
+    if(arr.every(v => v && typeof v==='object' && !Array.isArray(v))){
+      const m = mergeObjects(arr);
+      const name = uniq(singular);
+      emit(name, m.shape, m.optional);
+      return name+'[]';
+    }
+    const u=[...new Set(arr.map(v => typeOf(v, singular)))];
+    return (u.length===1 ? u[0] : `(${u.join(' | ')})`)+'[]';
+  }
+  function objType(obj, hint){
+    const shape={};
+    for(const k of Object.keys(obj)) shape[k]=typeOf(obj[k], k);
+    const name = uniq(hint);
+    emit(name, shape, new Set());
+    return name;
+  }
+  function mergeObjects(objs){
+    const keys=[]; const seen=new Set();
+    objs.forEach(o => Object.keys(o).forEach(k => { if(!seen.has(k)){ seen.add(k); keys.push(k); } }));
+    const shape={}, optional=new Set();
+    for(const k of keys){
+      const present = objs.filter(o => k in o);
+      if(present.length < objs.length) optional.add(k);
+      const u=[...new Set(present.map(o => typeOf(o[k], k)))];
+      shape[k] = u.join(' | ') || 'any';
+    }
+    return { shape, optional };
+  }
+  function emit(name, shape, optional){
+    const lines=[`interface ${name} {`];
+    for(const k of Object.keys(shape)){
+      const safe = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k) ? k : JSON.stringify(k);
+      lines.push(`  ${safe}${optional.has(k)?'?':''}: ${shape[k]};`);
+    }
+    lines.push('}');
+    out.push(lines.join('\n'));
+  }
+  const rootType = typeOf(root, rootName);
+  if(rootType !== pascal(rootName)){
+    out.push(`type ${pascal(rootName)} = ${rootType};`);
+  }
+  return out.join('\n\n');
+}
+function jsonToCSharp(root, rootName){
+  const out=[]; const used=new Set(); let usesAttr=false;
+  const uniq = base => { base = pascal(base) || 'Item'; let n=base, i=2; while(used.has(n)){ n=base+(i++); } used.add(n); return n; };
+  const typeOf = (v, hint) => {
+    if(v===null) return 'object';
+    switch(typeof v){
+      case 'string': return 'string';
+      case 'boolean': return 'bool';
+      case 'number': return Number.isInteger(v) ? 'long' : 'double';
+      case 'object': return Array.isArray(v) ? `List<${elemType(v, hint)}>` : objType(v, hint);
+      default: return 'object';
+    }
+  };
+  function elemType(arr, hint){
+    if(!arr.length) return 'object';
+    const singular = hint.replace(/ies$/,'y').replace(/s$/,'') || hint;
+    if(arr.every(v => v && typeof v==='object' && !Array.isArray(v))){
+      const shape = mergeObjects(arr);
+      const name = uniq(singular);
+      emit(name, shape);
+      return name;
+    }
+    const u=[...new Set(arr.map(v => typeOf(v, singular)))];
+    return u.length===1 ? u[0] : 'object';
+  }
+  function objType(obj, hint){
+    const shape={};
+    for(const k of Object.keys(obj)) shape[k]=typeOf(obj[k], k);
+    const name = uniq(hint);
+    emit(name, shape);
+    return name;
+  }
+  function mergeObjects(objs){
+    const keys=[]; const seen=new Set();
+    objs.forEach(o => Object.keys(o).forEach(k => { if(!seen.has(k)){ seen.add(k); keys.push(k); } }));
+    const shape={};
+    for(const k of keys){
+      const present = objs.filter(o => k in o);
+      const u=[...new Set(present.map(o => typeOf(o[k], k)))];
+      shape[k] = u.length===1 ? u[0] : 'object';
+    }
+    return shape;
+  }
+  function emit(name, shape){
+    const lines=[`public class ${name}`, '{'];
+    for(const k of Object.keys(shape)){
+      const prop = pascal(k) || 'Value';
+      if(prop !== k){ usesAttr=true; lines.push(`    [JsonPropertyName("${k.replace(/"/g,'\\"')}")]`); }
+      lines.push(`    public ${shape[k]} ${prop} { get; set; }`);
+    }
+    lines.push('}');
+    out.push(lines.join('\n'));
+  }
+  const rootType = typeOf(root, rootName);
+  let body = out.join('\n\n');
+  if(rootType !== pascal(rootName)){
+    body = (body ? body+'\n\n' : '') + `// 根值型別：${rootType}`;
+  }
+  return (usesAttr ? 'using System.Text.Json.Serialization;\n\n' : '') + body;
+}
+
+// ── Parse / serialize ─────────────────────────────────────
+async function parseSource(text, fmt){
+  switch(fmt){
+    case 'json': return JSON.parse(text);
+    case 'yaml': return (await getYaml()).load(text);
+    case 'toml': return (await getToml()).parse(text);
+    case 'csv':  return csvToData(text);
+  }
+}
+async function serialize(data, fmt, indent){
+  switch(fmt){
+    case 'json':  return indent>0 ? JSON.stringify(data, null, indent) : JSON.stringify(data);
+    case 'yaml':  return (await getYaml()).dump(data, { indent:2, lineWidth:-1 });
+    case 'toml': {
+      if(data===null || typeof data!=='object' || Array.isArray(data))
+        throw new Error('TOML 輸出需要物件（key-value）作為根層級');
+      return (await getToml()).stringify(data);
+    }
+    case 'csv':   return dataToCsv(data);
+    case 'ts':    return jsonToTS(data, 'Root');
+    case 'csharp':return jsonToCSharp(data, 'Root');
+  }
+}
+
+// ── JSON highlight ────────────────────────────────────────
+function hlJson(code){
+  return esc(code).replace(
+    /("(?:\\.|[^"\\])*"(\s*:)?)|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|\b(true|false)\b|\b(null)\b/g,
+    (m, str, colon, num, bool, nul) => {
+      if(str) return colon ? `<span class="j-key">${str.slice(0,-colon.length)}</span>${colon}` : `<span class="j-str">${str}</span>`;
+      if(num) return `<span class="j-num">${num}</span>`;
+      if(bool) return `<span class="j-bool">${bool}</span>`;
+      if(nul) return `<span class="j-null">${nul}</span>`;
+      return m;
+    }
+  );
+}
+
+// ── Status ────────────────────────────────────────────────
+function setStatus(type, msg){
+  const el=$('status');
+  el.className = 'statusbar '+type;
+  el.textContent = msg;
+}
+
+// ── Core convert ──────────────────────────────────────────
+let convertTimer=null;
+function scheduleConvert(){ clearTimeout(convertTimer); convertTimer=setTimeout(convert, 180); }
+
+async function convert(){
+  const text = $('input').value;
+  const out = $('output');
+  $('srcMeta').textContent = text ? text.length+' 字元' : '';
+  if(!text.trim()){
+    out.className='out empty'; out.textContent='// 輸出會顯示在這裡';
+    state.lastOutput=''; $('tgtMeta').textContent='';
+    setStatus('idle','就緒 · 所有轉換皆在瀏覽器本地執行');
+    return;
+  }
+  try {
+    const data = await parseSource(text, state.src);
+    const result = await serialize(data, state.tgt, state.indent);
+    state.lastOutput = result;
+    if(state.tgt==='json'){
+      out.className='out'; out.innerHTML = hlJson(result);
+    } else {
+      out.className='out'; out.textContent = result;
+    }
+    $('tgtMeta').textContent = result.split('\n').length+' 行';
+    setStatus('ok', `✓ ${FMT_NAME[state.src]} → ${FMT_NAME[state.tgt]} 轉換成功`);
+  } catch(e){
+    out.className='out empty'; out.textContent='// 轉換失敗，請檢查輸入';
+    state.lastOutput='';
+    setStatus('err', '✗ '+(e.message||String(e)));
+  }
+}
+
+// ── UI wiring ─────────────────────────────────────────────
+function syncTags(){
+  $('srcTag').textContent = FMT_NAME[state.src];
+  $('tgtTag').textContent = FMT_NAME[state.tgt];
+  $('swapBtn').disabled = !DATA_FMTS.includes(state.tgt);
+}
+
+$('srcFmt').addEventListener('change', e => { state.src=e.target.value; syncTags(); convert(); });
+$('tgtFmt').addEventListener('change', e => { state.tgt=e.target.value; state.indent=2; syncTags(); convert(); });
+$('input').addEventListener('input', scheduleConvert);
+
+$('swapBtn').addEventListener('click', () => {
+  if(!DATA_FMTS.includes(state.tgt)) return;
+  const newInput = state.lastOutput || '';
+  [state.src, state.tgt] = [state.tgt, state.src];
+  $('srcFmt').value = state.src; $('tgtFmt').value = state.tgt;
+  if(newInput) $('input').value = newInput;
+  syncTags(); convert();
+});
+
+$('btnPretty').addEventListener('click', () => { state.tgt='json'; state.indent=2; $('tgtFmt').value='json'; syncTags(); convert(); });
+$('btnMinify').addEventListener('click', () => { state.tgt='json'; state.indent=0; $('tgtFmt').value='json'; syncTags(); convert(); });
+
+$('btnValidate').addEventListener('click', async () => {
+  const text=$('input').value;
+  if(!text.trim()){ setStatus('idle','沒有可驗證的內容'); return; }
+  try {
+    const data = await parseSource(text, state.src);
+    let info='';
+    if(Array.isArray(data)) info=`陣列，共 ${data.length} 筆`;
+    else if(data && typeof data==='object') info=`物件，共 ${Object.keys(data).length} 個鍵`;
+    else info=`型別：${data===null?'null':typeof data}`;
+    setStatus('ok', `✓ ${FMT_NAME[state.src]} 格式有效 · ${info}`);
+  } catch(e){
+    setStatus('err', '✗ '+(e.message||String(e)));
+  }
+});
+
+$('btnCopy').addEventListener('click', () => {
+  if(!state.lastOutput) return;
+  navigator.clipboard.writeText(state.lastOutput).then(() => {
+    const b=$('btnCopy'); b.textContent='已複製 ✓'; setTimeout(()=>b.textContent='複製',1200);
+  });
+});
+$('btnDownload').addEventListener('click', () => {
+  if(!state.lastOutput) return;
+  const ext = { json:'json', yaml:'yaml', toml:'toml', csv:'csv', ts:'ts', csharp:'cs' }[state.tgt];
+  const blob = new Blob([state.lastOutput], { type:'text/plain;charset=utf-8' });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='converted.'+ext; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+});
+$('btnPaste').addEventListener('click', async () => {
+  try { $('input').value = await navigator.clipboard.readText(); convert(); } catch(e){}
+});
+$('btnClear').addEventListener('click', () => {
+  $('input').value=''; convert();
+});
+
+const SAMPLES = {
+  json: '{\n  "name": "LazyEmbed",\n  "version": 2,\n  "private": false,\n  "tools": [\n    { "id": "json-filter", "title": "JSON Filter", "tags": ["json", "filter"] },\n    { "id": "format-converter", "title": "格式轉換器", "tags": ["json", "yaml", "toml", "csv"] }\n  ],\n  "owner": { "name": "dwvwdv", "active": true }\n}',
+  csv: 'id,title,active,score\n1,JSON Filter,true,9.5\n2,格式轉換器,true,9.8\n3,圖片轉換器,false,8.2',
+};
+$('btnSample').addEventListener('click', () => {
+  if(state.src==='csv'){ $('input').value = SAMPLES.csv; }
+  else if(state.src==='json'){ $('input').value = SAMPLES.json; }
+  else {
+    // for yaml/toml sources, generate a sample from the JSON object
+    parseSource(SAMPLES.json,'json').then(d => serialize(d, state.src, 2)).then(s => { $('input').value=s; convert(); });
+    return;
+  }
+  convert();
+});
+
+syncTags();
+convert();
+</script>
+</body>
+</html>

@@ -312,7 +312,7 @@
 
 <div class="section">
   <div class="section-head">
-    <span class="section-title">資料工具</span>
+    <span class="section-title">資料與格式工具</span>
     <span class="section-count" id="dataCount"></span>
     <span class="divider"></span>
   </div>
@@ -357,6 +357,77 @@
         <div class="card-features">
           <span class="feat-chip">流量圖</span>
           <span class="feat-chip">收支分析</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="tool-card theme-amber" href="widgets/format-converter.html">
+      <div class="card-icon">⇄</div>
+      <div class="card-tag">JSON · YAML · TOML · CSV</div>
+      <div class="card-title">萬用格式轉換器</div>
+      <div class="card-desc">JSON ↔ YAML ↔ TOML ↔ CSV 一鍵互轉，內建壓縮 / 美化 / 驗證，並可直接產生 TypeScript Interface 或 C# Class。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">互轉</span>
+          <span class="feat-chip">型別產生</span>
+          <span class="feat-chip">驗證</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <span class="section-title">開發實用工具</span>
+    <span class="section-count" id="devCount"></span>
+    <span class="divider"></span>
+  </div>
+  <div class="tool-grid" id="devGrid">
+
+    <a class="tool-card theme-rose" href="widgets/image-converter.html">
+      <div class="card-icon">🖼</div>
+      <div class="card-tag">IMAGE · WEBP / AVIF</div>
+      <div class="card-title">圖片轉換器</div>
+      <div class="card-desc">純前端裁切、壓縮並轉成 WebP / AVIF 等網頁友善格式。支援批次處理、即時預覽檔案大小，圖片不離開瀏覽器。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">壓縮</span>
+          <span class="feat-chip">裁切</span>
+          <span class="feat-chip">WebP/AVIF</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="tool-card theme-green" href="widgets/password-generator.html">
+      <div class="card-icon">🔑</div>
+      <div class="card-tag">SECURITY</div>
+      <div class="card-title">密碼與金鑰產生器</div>
+      <div class="card-desc">以 crypto 安全亂數產生高強度密碼，並一鍵生成 UUID v4、Base64 / Hex 金鑰，適合設定 JWT Secret 等環境變數。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">強度分析</span>
+          <span class="feat-chip">UUID</span>
+          <span class="feat-chip">Base64/Hex</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="tool-card theme-cyan" href="widgets/web-inspector.html">
+      <div class="card-icon">🌐</div>
+      <div class="card-tag">DNS · SEO · OG</div>
+      <div class="card-title">網頁檢查工具</div>
+      <div class="card-desc">查詢 DNS 紀錄（DNS-over-HTTPS）、解析 Meta / Open Graph 標籤，並模擬 Twitter 與 Facebook 分享卡片的預覽畫面。</div>
+      <div class="card-footer">
+        <div class="card-features">
+          <span class="feat-chip">DNS</span>
+          <span class="feat-chip">Meta</span>
+          <span class="feat-chip">分享預覽</span>
         </div>
         <span class="card-arrow">→</span>
       </div>
@@ -415,8 +486,11 @@
 
 <script>
   const dataTools = document.querySelectorAll('#dataGrid .tool-card');
+  const devTools  = document.querySelectorAll('#devGrid .tool-card');
+  const total = dataTools.length + devTools.length;
   document.getElementById('dataCount').textContent = dataTools.length + ' 個工具';
-  document.getElementById('toolCount').textContent = dataTools.length + ' tools';
+  document.getElementById('devCount').textContent  = devTools.length + ' 個工具';
+  document.getElementById('toolCount').textContent = total + ' tools';
 </script>
 </body>
 </html>
