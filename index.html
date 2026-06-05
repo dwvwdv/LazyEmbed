@@ -302,6 +302,9 @@
   </a>
   <div class="spacer"></div>
   <span class="header-meta" id="toolCount"></span>
+  <span class="vim-shortcut-pill" title="按 F 進入提示模式，用字母鍵跳轉工具">
+    <kbd>F</kbd> Hint
+  </span>
 </header>
 
 <div class="hero">
@@ -318,7 +321,7 @@
   </div>
   <div class="tool-grid" id="dataGrid">
 
-    <a class="tool-card theme-blue" href="widgets/json-filter.html">
+    <a class="tool-card theme-blue" id="card-json-filter" href="widgets/json-filter.html">
       <div class="card-icon">{ }</div>
       <div class="card-tag">JSON</div>
       <div class="card-title">JSON Filter</div>
@@ -333,7 +336,7 @@
       </div>
     </a>
 
-    <a class="tool-card theme-indigo" href="widgets/json-table-visualizer.html">
+    <a class="tool-card theme-indigo" id="card-json-table" href="widgets/json-table-visualizer.html">
       <div class="card-icon">⊞</div>
       <div class="card-tag">JSON · TABLE</div>
       <div class="card-title">JSON Table Visualizer</div>
@@ -348,7 +351,7 @@
       </div>
     </a>
 
-    <a class="tool-card theme-green" href="widgets/cashflow-visualizer.html">
+    <a class="tool-card theme-green" id="card-cashflow" href="widgets/cashflow-visualizer.html">
       <div class="card-icon">↕</div>
       <div class="card-tag">FINANCE · CHART</div>
       <div class="card-title">資金流可視化</div>
@@ -413,10 +416,18 @@
   LazyEmbed · 所有運算在瀏覽器本地執行，資料不上傳至任何伺服器
 </footer>
 
+<script src="js/vimium-navigator.js"></script>
 <script>
   const dataTools = document.querySelectorAll('#dataGrid .tool-card');
   document.getElementById('dataCount').textContent = dataTools.length + ' 個工具';
   document.getElementById('toolCount').textContent = dataTools.length + ' tools';
+
+  // Vimium-style hint navigation
+  // Keys: J → JSON Filter, T → JSON Table, C → Cashflow
+  const nav = new VimiumNavigator();
+  nav.register('j', '#card-json-filter')
+     .register('t', '#card-json-table')
+     .register('c', '#card-cashflow');
 </script>
 </body>
 </html>
