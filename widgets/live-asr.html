@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
+<title>本地即時語音辨識 — LazyEmbed</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f12;
+    --bg2: #13161b;
+    --bg3: #1a1e25;
+    --bg4: #222730;
+    --border: #2a2f3a;
+    --border2: #333a47;
+    --text: #cdd5e0;
+    --text2: #7e8a9e;
+    --text3: #4a5568;
+    --accent: #22d3ee;
+    --accent-bg: rgba(34, 211, 238, .10);
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #f87171;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  button, select { font: inherit; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 52px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: var(--accent-bg);
+    border: 1px solid rgba(34, 211, 238, .24);
+    color: var(--accent);
+    font-size: 12px;
+  }
+
+  .spacer { flex: 1; }
+
+  .back {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 12px;
+  }
+
+  .back:hover { color: var(--text); }
+
+  .main {
+    width: min(860px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 42px 0 64px;
+  }
+
+  .eyebrow {
+    margin-bottom: 10px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-bottom: 10px;
+    color: var(--text);
+    font-size: clamp(24px, 4vw, 34px);
+    line-height: 1.25;
+    font-weight: 650;
+  }
+
+  .lead {
+    max-width: 650px;
+    margin-bottom: 26px;
+    color: var(--text2);
+    font-size: 14px;
+  }
+
+  .privacy {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(34, 197, 94, .28);
+    border-radius: var(--radius);
+    background: rgba(34, 197, 94, .06);
+  }
+
+  .privacy-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: rgba(34, 197, 94, .12);
+    color: var(--green);
+    font-size: 14px;
+  }
+
+  .privacy strong {
+    display: block;
+    margin-bottom: 2px;
+    color: #9ee6b2;
+    font-size: 12px;
+  }
+
+  .privacy p {
+    color: var(--text2);
+    font-size: 11.5px;
+  }
+
+  .panel {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    overflow: hidden;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field {
+    min-width: 180px;
+    flex: 1;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  select {
+    width: 100%;
+    height: 38px;
+    padding: 0 11px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--bg3);
+    color: var(--text);
+  }
+
+  select:focus { border-color: var(--accent); }
+  select:disabled { opacity: .5; }
+
+  .btn {
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .btn-primary {
+    min-width: 112px;
+    border-color: rgba(34, 211, 238, .35);
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .btn-stop {
+    border-color: rgba(248, 113, 113, .35);
+    background: rgba(248, 113, 113, .08);
+    color: var(--red);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px 16px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--text3);
+  }
+
+  .status-dot.ready { background: var(--green); }
+  .status-dot.busy { background: var(--amber); animation: pulse 1s ease-in-out infinite; }
+  .status-dot.live { background: var(--red); animation: pulse .9s ease-in-out infinite; }
+  .status-dot.error { background: var(--red); }
+
+  @keyframes pulse {
+    50% { opacity: .35; transform: scale(.82); }
+  }
+
+  .status-copy { min-width: 0; }
+  .status-title { color: var(--text); font-size: 12px; }
+  .status-detail { color: var(--text3); font-size: 10.5px; font-family: var(--mono); }
+
+  .transcript-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+
+  .transcript-head h2 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .char-count {
+    margin-left: auto;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .transcript {
+    min-height: 260px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .placeholder { color: var(--text3); }
+  .interim { color: var(--text2); }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .note {
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-left: 2px solid var(--border2);
+    color: var(--text3);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  .note code {
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 600px) {
+    .header { padding: 0 16px; }
+    .main { width: min(100% - 24px, 860px); padding-top: 30px; }
+    .controls { align-items: stretch; }
+    .field { min-width: 100%; }
+    .btn-primary { flex: 1; }
+    .transcript { min-height: 220px; font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="header">
+  <a class="logo" href="../index.html">
+    <span class="logo-icon">LE</span>
+    LazyEmbed
+  </a>
+  <span class="spacer"></span>
+  <a class="back" href="../index.html">← 返回工具集</a>
+</header>
+
+<main class="main">
+  <div class="eyebrow">Local · Live ASR</div>
+  <h1>本地即時語音辨識</h1>
+  <p class="lead">直接用麥克風說話，辨識中的文字會即時顯示。辨識強制使用瀏覽器的裝置端語音模型，不提供任何雲端 fallback。</p>
+
+  <section class="privacy">
+    <div class="privacy-icon">✓</div>
+    <div>
+      <strong>語音資料不離開裝置</strong>
+      <p>此頁面禁止 fetch / XHR / WebSocket 等對外連線，且 ASR 強制設定 <code>processLocally = true</code>。首次使用若缺少語言包，瀏覽器可能需要先下載本地模型。</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="controls">
+      <div class="field">
+        <label for="language">辨識語言</label>
+        <select id="language">
+          <option value="zh-TW" selected>繁體中文（台灣）</option>
+          <option value="zh-CN">簡體中文（中國）</option>
+          <option value="en-US">English (US)</option>
+          <option value="ja-JP">日本語</option>
+          <option value="ko-KR">한국어</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="startBtn" type="button">開始辨識</button>
+      <button class="btn btn-stop" id="stopBtn" type="button" disabled>停止</button>
+    </div>
+    <div class="status-row" role="status" aria-live="polite">
+      <span class="status-dot" id="statusDot"></span>
+      <div class="status-copy">
+        <div class="status-title" id="statusTitle">檢查本地 ASR 支援...</div>
+        <div class="status-detail" id="statusDetail">LOCAL ONLY</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="transcript-head">
+    <h2>即時辨識結果</h2>
+    <span class="char-count" id="charCount">0 chars</span>
+  </div>
+  <div class="transcript" id="transcript" aria-live="polite">
+    <span class="placeholder">按「開始辨識」後直接說話...</span>
+  </div>
+  <div class="actions">
+    <button class="btn" id="copyBtn" type="button">複製全文</button>
+    <button class="btn" id="downloadBtn" type="button">下載 .txt</button>
+    <button class="btn" id="clearBtn" type="button">清空</button>
+  </div>
+
+  <div class="note">
+    需要支援裝置端 Web Speech API 的瀏覽器。若瀏覽器沒有 <code>processLocally</code> / <code>available()</code> 能力，本工具會直接停用，而不是切換到遠端辨識服務。麥克風權限只在你按下開始後請求。
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const language = document.getElementById('language');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const statusDot = document.getElementById('statusDot');
+  const statusTitle = document.getElementById('statusTitle');
+  const statusDetail = document.getElementById('statusDetail');
+  const transcript = document.getElementById('transcript');
+  const charCount = document.getElementById('charCount');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  let recognition = null;
+  let shouldListen = false;
+  let finalTranscript = '';
+  let interimTranscript = '';
+  let restartTimer = null;
+
+  function setStatus(kind, title, detail = 'LOCAL ONLY') {
+    statusDot.className = 'status-dot' + (kind ? ' ' + kind : '');
+    statusTitle.textContent = title;
+    statusDetail.textContent = detail;
+  }
+
+  function supportsStrictLocalRecognition() {
+    if (!SpeechRecognitionCtor) return false;
+    try {
+      const probe = new SpeechRecognitionCtor();
+      return 'processLocally' in probe &&
+        typeof SpeechRecognitionCtor.available === 'function' &&
+        typeof SpeechRecognitionCtor.install === 'function';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function renderTranscript() {
+    const finalText = finalTranscript.trim();
+    const interimText = interimTranscript.trim();
+
+    transcript.replaceChildren();
+
+    if (!finalText && !interimText) {
+      const placeholder = document.createElement('span');
+      placeholder.className = 'placeholder';
+      placeholder.textContent = '按「開始辨識」後直接說話...';
+      transcript.appendChild(placeholder);
+    } else {
+      if (finalText) {
+        transcript.appendChild(document.createTextNode(finalText));
+      }
+      if (interimText) {
+        if (finalText) transcript.appendChild(document.createTextNode(' '));
+        const interim = document.createElement('span');
+        interim.className = 'interim';
+        interim.textContent = interimText;
+        transcript.appendChild(interim);
+      }
+    }
+
+    const count = (finalText + interimText).length;
+    charCount.textContent = count + ' chars';
+  }
+
+  function appendFinal(text) {
+    if (!text) return;
+    if (finalTranscript && !/\s$/.test(finalTranscript) && !/^\s/.test(text)) {
+      finalTranscript += ' ';
+    }
+    finalTranscript += text;
+  }
+
+  async function getLocalAvailability(lang) {
+    return SpeechRecognitionCtor.available({
+      langs: [lang],
+      processLocally: true
+    });
+  }
+
+  async function ensureLocalLanguagePack(lang) {
+    let availability;
+    try {
+      availability = await getLocalAvailability(lang);
+    } catch (error) {
+      throw new Error('無法檢查本地語言包：' + (error.message || error));
+    }
+
+    if (availability === 'available') return true;
+
+    if (availability === 'unavailable') {
+      throw new Error(lang + ' 的裝置端語言包目前不可用');
+    }
+
+    setStatus('busy', '正在準備本地語言包', lang + ' · ' + availability.toUpperCase());
+
+    let installed = false;
+    try {
+      installed = await SpeechRecognitionCtor.install({
+        langs: [lang],
+        processLocally: true
+      });
+    } catch (error) {
+      throw new Error('本地語言包安裝失敗：' + (error.message || error));
+    }
+
+    if (!installed) {
+      throw new Error('瀏覽器無法安裝 ' + lang + ' 本地語言包');
+    }
+
+    availability = await getLocalAvailability(lang);
+    if (availability !== 'available') {
+      throw new Error('語言包尚未就緒：' + availability);
+    }
+
+    return true;
+  }
+
+  function createRecognition(lang) {
+    const instance = new SpeechRecognitionCtor();
+    instance.lang = lang;
+    instance.continuous = true;
+    instance.interimResults = true;
+    instance.maxAlternatives = 1;
+    instance.processLocally = true;
+
+    if ('unspokenPunctuation' in instance) {
+      try { instance.unspokenPunctuation = true; } catch (_) {}
+    }
+
+    instance.onstart = () => {
+      setStatus('live', '正在聆聽', lang + ' · ON-DEVICE');
+    };
+
+    instance.onspeechstart = () => {
+      setStatus('live', '偵測到語音，正在辨識', lang + ' · ON-DEVICE');
+    };
+
+    instance.onresult = (event) => {
+      let currentInterim = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const text = result[0]?.transcript || '';
+
+        if (result.isFinal) {
+          appendFinal(text);
+        } else {
+          currentInterim += text;
+        }
+      }
+
+      interimTranscript = currentInterim;
+      renderTranscript();
+    };
+
+    instance.onerror = (event) => {
+      const code = event.error || 'unknown';
+
+      if (code === 'aborted' && !shouldListen) return;
+
+      if (code === 'no-speech' && shouldListen) {
+        setStatus('busy', '等待語音', lang + ' · ON-DEVICE');
+        return;
+      }
+
+      shouldListen = false;
+      interimTranscript = '';
+      renderTranscript();
+      language.disabled = false;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      const messages = {
+        'not-allowed': '麥克風權限被拒絕',
+        'service-not-allowed': '瀏覽器不允許本地語音服務',
+        'audio-capture': '找不到可用的麥克風',
+        'language-not-supported': '本地語言包不支援目前語言',
+        'network': '本地語音服務初始化失敗'
+      };
+
+      setStatus('error', messages[code] || ('辨識失敗：' + code), 'NO CLOUD FALLBACK');
+    };
+
+    instance.onend = () => {
+      if (!shouldListen) {
+        setStatus('ready', '已停止', lang + ' · LOCAL READY');
+        return;
+      }
+
+      clearTimeout(restartTimer);
+      restartTimer = setTimeout(() => {
+        if (!shouldListen) return;
+        try {
+          instance.start();
+        } catch (error) {
+          shouldListen = false;
+          language.disabled = false;
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+          setStatus('error', '無法繼續辨識', error.message || 'restart failed');
+        }
+      }, 180);
+    };
+
+    return instance;
+  }
+
+  async function startRecognition() {
+    if (shouldListen) return;
+
+    if (!supportsStrictLocalRecognition()) {
+      setStatus('error', '此瀏覽器不支援強制本地 ASR', 'REQUIRES ON-DEVICE WEB SPEECH API');
+      return;
+    }
+
+    const lang = language.value;
+    startBtn.disabled = true;
+    language.disabled = true;
+    setStatus('busy', '檢查本地語言模型', lang + ' · LOCAL ONLY');
+
+    try {
+      await ensureLocalLanguagePack(lang);
+
+      recognition = createRecognition(lang);
+      shouldListen = true;
+      stopBtn.disabled = false;
+      recognition.start();
+    } catch (error) {
+      shouldListen = false;
+      language.disabled = false;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      setStatus('error', error.message || String(error), 'NO CLOUD FALLBACK');
+    }
+  }
+
+  function stopRecognition() {
+    shouldListen = false;
+    clearTimeout(restartTimer);
+    interimTranscript = '';
+    renderTranscript();
+    language.disabled = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+
+    if (recognition) {
+      try { recognition.stop(); } catch (_) {}
+    }
+  }
+
+  async function refreshAvailability() {
+    if (!supportsStrictLocalRecognition()) {
+      startBtn.disabled = true;
+      setStatus('error', '此瀏覽器不支援強制本地 ASR', 'CHROME / EDGE DESKTOP 139+');
+      return;
+    }
+
+    const lang = language.value;
+    startBtn.disabled = false;
+    setStatus('busy', '檢查本地語言包', lang + ' · LOCAL ONLY');
+
+    try {
+      const availability = await getLocalAvailability(lang);
+      if (availability === 'available') {
+        setStatus('ready', '本地 ASR 已就緒', lang + ' · ON-DEVICE');
+      } else if (availability === 'downloadable') {
+        setStatus('ready', '可使用，首次啟動會下載本地語言包', lang + ' · DOWNLOADABLE');
+      } else if (availability === 'downloading') {
+        setStatus('busy', '本地語言包下載中', lang + ' · DOWNLOADING');
+      } else {
+        setStatus('error', '此語言沒有可用的本地模型', lang + ' · UNAVAILABLE');
+      }
+    } catch (error) {
+      setStatus('error', '本地 ASR 檢查失敗', error.message || String(error));
+    }
+  }
+
+  async function copyTranscript() {
+    const text = finalTranscript.trim();
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = copyBtn.textContent;
+      copyBtn.textContent = '已複製';
+      setTimeout(() => { copyBtn.textContent = old; }, 900);
+    } catch (_) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+  }
+
+  function downloadTranscript() {
+    const text = finalTranscript.trim();
+    if (!text) return;
+
+    const blob = new Blob([text + '\n'], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'lazyembed-asr-' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  startBtn.addEventListener('click', startRecognition);
+  stopBtn.addEventListener('click', stopRecognition);
+  language.addEventListener('change', refreshAvailability);
+  copyBtn.addEventListener('click', copyTranscript);
+  downloadBtn.addEventListener('click', downloadTranscript);
+  clearBtn.addEventListener('click', () => {
+    finalTranscript = '';
+    interimTranscript = '';
+    renderTranscript();
+  });
+
+  window.addEventListener('beforeunload', stopRecognition);
+  refreshAvailability();
+})();
+</script>
+</body>
+</html>
