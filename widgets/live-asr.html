@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
 <title>本地即時語音辨識 — LazyEmbed</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
   :root {
     --bg:#0d0f12; --bg2:#13161b; --bg3:#1a1e25; --bg4:#222730;
     --border:#2a2f3a; --border2:#333a47; --text:#cdd5e0; --text2:#7e8a9e; --text3:#4a5568;
@@ -15,8 +15,8 @@
     --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     --radius:10px; --radius-sm:6px;
   }
-  html, body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.6; }
-  button, select { font:inherit; }
+  html,body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.6; }
+  button,select { font:inherit; }
   .header { display:flex; align-items:center; gap:12px; height:52px; padding:0 24px; border-bottom:1px solid var(--border); background:var(--bg2); }
   .logo { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-family:var(--mono); font-size:13px; font-weight:600; }
   .logo-icon { width:28px; height:28px; display:grid; place-items:center; border-radius:7px; background:var(--accent-bg); border:1px solid rgba(34,211,238,.24); color:var(--accent); font-size:12px; }
@@ -87,7 +87,7 @@
     <div class="privacy-icon">✓</div>
     <div>
       <strong>語音資料不離開裝置</strong>
-      <p>此頁面禁止 fetch / XHR / WebSocket 等對外連線，且 ASR 強制設定 <code>processLocally = true</code>。首次使用若缺少語言包，瀏覽器會先安裝本地模型。</p>
+      <p>此頁面禁止 fetch / XHR / WebSocket 等對外連線，且 ASR 強制設定 <code>processLocally = true</code>。首次使用若缺少語言包，瀏覽器會先安裝本地模型與本地辨識 runtime。</p>
     </div>
   </section>
 
@@ -127,7 +127,7 @@
   </div>
 
   <div class="note">
-    <code>downloadable</code> 代表瀏覽器支援該語言的本地辨識，但語言包尚未安裝。按下開始後會呼叫瀏覽器的本地語言包安裝流程；若本地能力不可用，本工具會停止，不會切到雲端辨識。
+    <code>downloadable</code> = 可下載但尚未可用；<code>downloading</code> = runtime / 語言包仍在安裝；只有 <code>available</code> 才會真正啟動麥克風辨識。本工具不會把這些狀態當成可用，也不會切換到雲端服務。
   </div>
 </main>
 
@@ -148,11 +148,17 @@
   const downloadBtn = document.getElementById('downloadBtn');
   const clearBtn = document.getElementById('clearBtn');
 
+  const LOCAL_QUALITY = 'command';
+  const READY_TIMEOUT_MS = 60000;
+  const READY_POLL_MS = 750;
+
   let recognition = null;
   let shouldListen = false;
   let finalTranscript = '';
   let interimTranscript = '';
   let restartTimer = null;
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   function setStatus(kind, title, detail = 'LOCAL ONLY') {
     statusDot.className = 'status-dot' + (kind ? ' ' + kind : '');
@@ -170,6 +176,15 @@
     } catch (_) {
       return false;
     }
+  }
+
+  function localOptions(lang) {
+    const options = { langs:[lang], processLocally:true };
+    try {
+      const probe = new SpeechRecognitionCtor();
+      if ('quality' in probe) options.quality = LOCAL_QUALITY;
+    } catch (_) {}
+    return options;
   }
 
   function renderTranscript() {
@@ -203,7 +218,33 @@
   }
 
   async function getLocalAvailability(lang) {
-    return SpeechRecognitionCtor.available({ langs:[lang], processLocally:true });
+    return SpeechRecognitionCtor.available(localOptions(lang));
+  }
+
+  async function waitUntilLocalReady(lang) {
+    const deadline = Date.now() + READY_TIMEOUT_MS;
+    let lastStatus = 'unknown';
+
+    while (Date.now() < deadline) {
+      lastStatus = await getLocalAvailability(lang);
+
+      if (lastStatus === 'available') {
+        setStatus('ready', '本地 ASR 已就緒', lang + ' · ON-DEVICE');
+        return;
+      }
+
+      if (lastStatus === 'unavailable') {
+        throw new Error(lang + ' 的裝置端 ASR 不可用');
+      }
+
+      const stateText = lastStatus === 'downloading'
+        ? '本地 ASR runtime / 語言包下載中'
+        : '等待本地 ASR runtime 完成安裝';
+      setStatus('busy', stateText, lang + ' · ' + String(lastStatus).toUpperCase());
+      await sleep(READY_POLL_MS);
+    }
+
+    throw new Error('本地 ASR 在 60 秒內仍未 ready（最後狀態：' + lastStatus + '）');
   }
 
   async function ensureLocalLanguagePack(lang) {
@@ -211,29 +252,26 @@
     try {
       availability = await getLocalAvailability(lang);
     } catch (error) {
-      throw new Error('無法檢查本地語言包：' + (error.message || error));
+      throw new Error('無法檢查本地 ASR：' + (error.message || error));
     }
 
     if (availability === 'available') return;
-    if (availability === 'unavailable') throw new Error(lang + ' 的裝置端語言包目前不可用');
+    if (availability === 'unavailable') throw new Error(lang + ' 的裝置端 ASR 目前不可用');
 
-    const label = availability === 'downloading' ? '等待本地語言包下載完成' : '正在安裝本地語言包';
-    setStatus('busy', label, lang + ' · ' + availability.toUpperCase());
-
-    let installed;
-    try {
-      installed = await SpeechRecognitionCtor.install({ langs:[lang], processLocally:true });
-    } catch (error) {
-      throw new Error('本地語言包安裝失敗：' + (error.message || error));
+    if (availability === 'downloadable') {
+      setStatus('busy', '正在安裝本地 ASR', lang + ' · DOWNLOADABLE');
+      let installed;
+      try {
+        installed = await SpeechRecognitionCtor.install(localOptions(lang));
+      } catch (error) {
+        throw new Error('本地 ASR 安裝失敗：' + (error.message || error));
+      }
+      if (!installed) throw new Error('瀏覽器無法安裝 ' + lang + ' 本地 ASR');
     }
 
-    if (!installed) throw new Error('瀏覽器無法安裝 ' + lang + ' 本地語言包');
-
-    // install() resolves true only when the requested local language pack
-    // installation succeeded. Do not immediately call available() again here:
-    // Chromium may expose the old "downloadable" state for a short moment,
-    // causing a false failure even though install() already succeeded.
-    setStatus('ready', '本地語言包已安裝', lang + ' · ON-DEVICE');
+    // Chromium 的 install() callback 與底層 SODA/runtime 的真正可用狀態
+    // 可能不是同一瞬間完成。只有 available() === "available" 才能 start().
+    await waitUntilLocalReady(lang);
   }
 
   function createRecognition(lang) {
@@ -243,6 +281,7 @@
     instance.interimResults = true;
     instance.maxAlternatives = 1;
     instance.processLocally = true;
+    if ('quality' in instance) instance.quality = LOCAL_QUALITY;
 
     instance.onstart = () => setStatus('live', '正在聆聽', lang + ' · ON-DEVICE');
     instance.onspeechstart = () => setStatus('live', '偵測到語音，正在辨識', lang + ' · ON-DEVICE');
@@ -259,8 +298,9 @@
       renderTranscript();
     };
 
-    instance.onerror = (event) => {
+    instance.onerror = async (event) => {
       const code = event.error || 'unknown';
+      const detail = event.message || '';
       if (code === 'aborted' && !shouldListen) return;
       if (code === 'no-speech' && shouldListen) {
         setStatus('busy', '等待語音', lang + ' · ON-DEVICE');
@@ -274,14 +314,24 @@
       startBtn.disabled = false;
       stopBtn.disabled = true;
 
+      if (code === 'language-not-supported') {
+        let availability = 'unknown';
+        try { availability = await getLocalAvailability(lang); } catch (_) {}
+        setStatus(
+          'error',
+          'Chrome 拒絕啟動本地 ASR（目前：' + availability + '）',
+          detail ? detail : 'LANGUAGE_NOT_SUPPORTED · NO CLOUD FALLBACK'
+        );
+        return;
+      }
+
       const messages = {
         'not-allowed':'麥克風權限被拒絕',
         'service-not-allowed':'瀏覽器不允許本地語音服務',
         'audio-capture':'找不到可用的麥克風',
-        'language-not-supported':'瀏覽器尚未啟用此本地語言包，請重新整理後再試',
         'network':'本地語音服務初始化失敗'
       };
-      setStatus('error', messages[code] || ('辨識失敗：' + code), 'NO CLOUD FALLBACK');
+      setStatus('error', messages[code] || ('辨識失敗：' + code), detail || 'NO CLOUD FALLBACK');
     };
 
     instance.onend = () => {
@@ -316,10 +366,16 @@
     const lang = language.value;
     startBtn.disabled = true;
     language.disabled = true;
-    setStatus('busy', '檢查本地語言模型', lang + ' · LOCAL ONLY');
+    setStatus('busy', '檢查本地 ASR', lang + ' · LOCAL ONLY');
 
     try {
       await ensureLocalLanguagePack(lang);
+      // 最後再確認一次。這不是 race workaround，而是 start() 的硬前置條件。
+      const availability = await getLocalAvailability(lang);
+      if (availability !== 'available') {
+        throw new Error('本地 ASR 尚未可用（' + availability + '）');
+      }
+
       recognition = createRecognition(lang);
       shouldListen = true;
       stopBtn.disabled = false;
@@ -355,14 +411,14 @@
 
     const lang = language.value;
     startBtn.disabled = false;
-    setStatus('busy', '檢查本地語言包', lang + ' · LOCAL ONLY');
+    setStatus('busy', '檢查本地 ASR', lang + ' · LOCAL ONLY');
 
     try {
       const availability = await getLocalAvailability(lang);
       if (availability === 'available') setStatus('ready', '本地 ASR 已就緒', lang + ' · ON-DEVICE');
-      else if (availability === 'downloadable') setStatus('ready', '本地語言包尚未安裝，按開始後自動安裝', lang + ' · DOWNLOADABLE');
-      else if (availability === 'downloading') setStatus('busy', '本地語言包下載中', lang + ' · DOWNLOADING');
-      else setStatus('error', '此語言沒有可用的本地模型', lang + ' · UNAVAILABLE');
+      else if (availability === 'downloadable') setStatus('ready', '本地 ASR 尚未安裝，按開始後自動安裝', lang + ' · DOWNLOADABLE');
+      else if (availability === 'downloading') setStatus('busy', '本地 ASR runtime / 語言包下載中', lang + ' · DOWNLOADING');
+      else setStatus('error', '此語言沒有可用的本地 ASR', lang + ' · UNAVAILABLE');
     } catch (error) {
       setStatus('error', '本地 ASR 檢查失敗', error.message || String(error));
     }
