@@ -4,31 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Table Visualizer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg:        #0d0f12;
-            --bg2:       #13161b;
-            --bg3:       #1a1e25;
-            --bg4:       #222730;
-            --border:    #2a2f3a;
-            --border2:   #333a47;
-            --text:      #cdd5e0;
-            --text2:     #7e8a9e;
-            --text3:     #4a5568;
-            --accent:    #3b82f6;
-            --accent-bg: rgba(59,130,246,.10);
-            --success:   #22c55e;
-            --danger:    #ef4444;
-            --warning:   #f59e0b;
-            --mono:      'JetBrains Mono', 'Courier New', monospace;
-            --sans:      'IBM Plex Sans', system-ui, sans-serif;
-            --radius:    10px;
-            --radius-sm: 6px;
+  /* Offbeat — lazyrhythm 設計系統 tokens v1（Nord × Brutalism），工具介面 STRUCTURE 6 / MOTION 3。
+     與 LazyEmbed 其他頁面共用同一組值；每個文字色在 bg／bg2／bg3 三層上都 ≥ 4.5:1。
+     Nord 原色負責「被看見」（填色、邊框、圓點），*-ink 負責「被讀懂」（文字）。 */
+  --bg:          #2e3440; /* polar0：頁面底 */
+  --bg2:         #3b4252; /* polar1：卡片、面板、輸入框 */
+  --bg3:         #434c5e; /* polar2：標題欄、hover、選中 */
+  --bg4:         #434c5e; /* polar2：chip 與狀態區塊底 */
+  --inset:       #272c36; /* 內凹的槽：程式碼區塊、進度條軌道 */
+  --border:      #4c566a; /* polar3：裝飾性結構邊框 */
+  --border2:     #919bb1; /* 控制項外框：bg／bg2／bg3 三層都 ≥ 3:1 */
+  --text-strong: #eceff4;
+  --text:        #d8dee9;
+  --text2:       #b8bdc8; /* dim-ink：輔助文字 */
+  --text3:       #b8bdc8;
+  --accent:      #88c0d0; /* frost1：主按鈕底、邊條、focus */
+  --accent2:     #8fbcbb; /* frost0：主按鈕 hover */
+  --accent-text: #93c6d4; /* frost-ink：強調文字與連結 */
+  --accent-ink:  #2e3440; /* 疊在 accent 上的字：6.24:1 */
+  --accent-bg:   #434c5e; /* 選中狀態底：sunken，不用半透明藍 */
+  --shadow-offset: #5e81ac;
+  --success:     #a3be8c;
+  --ok:          #a3be8c;
+  --ok-ink:      #b0cb98;
+  --ok-bg:       #434c5e;
+  --warning:     #ebcb8b;
+  --warn:        #ebcb8b;
+  --warn-ink:    #ebcb8b;
+  --warn-bg:     #434c5e;
+  --caution:     #d08770;
+  --caution-ink: #f3ae95;
+  --danger:      #bf616a;
+  --err:         #bf616a;
+  --err-ink:     #f4abb2;
+  --err-bg:      #434c5e;
+  --danger-fill: #a54049;
+  --danger-fill-hover: #8f3a42;
+  --special:     #b48ead;
+  --special-ink: #d9b2d3;
+  --key-c:       #93c6d4;
+  --str-c:       #b0cb98;
+  --num-c:       #d9b2d3;
+  --bool-c:      #f3ae95;
+  --null-c:      #b8bdc8;
+  --hl-bg:       #434c5e;
+  --hl-active:   #4c566a;
+  --hl-border:   #88c0d0;
+  --mono:        'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Noto Sans Mono CJK TC', monospace;
+  --sans:        system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+  --radius:      0;
+  --radius-sm:   0;
+  --offset:      3px;
+  --shadow:      3px 3px 0 0 #5e81ac;
+  --shadow-lg:   4px 4px 0 0 #5e81ac;
+  --shadow-ghost: 3px 3px 0 0 #4c566a;
+  --scrim:       rgba(0,0,0,.55);
+  color-scheme: dark;
         }
 
         body {
@@ -105,7 +140,7 @@
         .json-input:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-bg);
+            box-shadow: 0 0 0 2px var(--accent);
         }
 
         /* Buttons */
@@ -141,23 +176,24 @@
 
         .btn-primary {
             background: var(--accent);
-            color: white;
-            border-color: transparent;
-        }
+            color: var(--accent-ink);
+            border-color: var(--accent2);
+    box-shadow: var(--shadow);
+}
 
         .btn-primary:hover {
-            background: #2563eb;
+            background: #8fbcbb;
             border-color: transparent;
         }
 
         .btn-success {
-            background: rgba(34,197,94,.15);
-            color: #4ade80;
-            border-color: rgba(34,197,94,.3);
+            background: #434c5e;
+            color: #b0cb98;
+            border-color: #a3be8c;
         }
 
         .btn-success:hover {
-            background: rgba(34,197,94,.25);
+            background: #434c5e;
         }
 
         .btn-secondary {
@@ -200,11 +236,11 @@
         }
 
         .breadcrumb-item:hover {
-            color: var(--accent);
+            color: var(--accent-text);
         }
 
         .breadcrumb-item.active {
-            color: var(--accent);
+            color: var(--accent-text);
             font-weight: 600;
         }
 
@@ -233,7 +269,7 @@
         th {
             padding: 0.875rem 1rem;
             text-align: left;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.8125rem;
             color: var(--text2);
             position: sticky;
@@ -270,9 +306,9 @@
             cursor: pointer;
             position: relative;
             padding: 0.375rem 0.875rem;
-            background: rgba(245,158,11,.12);
-            color: #fbbf24;
-            border: 1px solid rgba(245,158,11,.3);
+            background: #434c5e;
+            color: #ebcb8b;
+            border: 1px solid #ebcb8b;
             border-radius: var(--radius-sm);
             display: inline-block;
             min-width: 120px;
@@ -282,8 +318,8 @@
         }
 
         .object-cell:hover {
-            background: rgba(245,158,11,.22);
-            border-color: rgba(245,158,11,.5);
+            background: #434c5e;
+            border-color: #ebcb8b;
             transform: translateY(-1px);
         }
 
@@ -292,19 +328,19 @@
         }
 
         .object-cell::after {
-            content: ' 🔍';
+            content: '';
             margin-left: 0.375rem;
         }
 
         .array-cell {
-            background: rgba(139,92,246,.12);
-            color: #a78bfa;
-            border-color: rgba(139,92,246,.3);
+            background: #434c5e;
+            color: #d9b2d3;
+            border-color: #b48ead;
         }
 
         .array-cell:hover {
-            background: rgba(139,92,246,.22);
-            border-color: rgba(139,92,246,.5);
+            background: #434c5e;
+            border-color: #b48ead;
         }
 
         /* Empty State */
@@ -323,9 +359,9 @@
 
         /* Error Message */
         .error-message {
-            background: rgba(239,68,68,.1);
-            color: #f87171;
-            border: 1px solid rgba(239,68,68,.3);
+            background: #434c5e;
+            color: #f4abb2;
+            border: 1px solid #bf616a;
             padding: 0.875rem 1rem;
             border-radius: var(--radius-sm);
             margin-top: 1rem;
@@ -411,7 +447,7 @@
         .cell-type {
             display: inline-block;
             padding: 0.125rem 0.4rem;
-            border-radius: 4px;
+            border-radius: 0;
             font-size: 0.6875rem;
             font-weight: 600;
             margin-left: 0.375rem;
@@ -419,9 +455,9 @@
             opacity: 0.85;
         }
 
-        .type-string  { background: rgba(59,130,246,.12);  color: #60a5fa; }
-        .type-number  { background: rgba(34,197,94,.12);   color: #4ade80; }
-        .type-boolean { background: rgba(251,146,60,.12);  color: #fb923c; }
+        .type-string  { background: #434c5e;  color: #93c6d4; }
+        .type-number  { background: #434c5e;   color: #b0cb98; }
+        .type-boolean { background: #434c5e;  color: #f3ae95; }
         .type-null    { background: var(--bg4);            color: var(--text3); }
     </style>
 </head>

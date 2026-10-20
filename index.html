@@ -4,28 +4,66 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LazyEmbed — 小工具集</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #0d0f12;
-    --bg2:       #13161b;
-    --bg3:       #1a1e25;
-    --bg4:       #222730;
-    --border:    #2a2f3a;
-    --border2:   #333a47;
-    --text:      #cdd5e0;
-    --text2:     #7e8a9e;
-    --text3:     #4a5568;
-    --accent:    #3b82f6;
-    --accent-bg: rgba(59,130,246,.10);
-    --mono:      'JetBrains Mono', monospace;
-    --sans:      'IBM Plex Sans', system-ui, sans-serif;
-    --radius:    10px;
-    --radius-sm: 6px;
+  /* Offbeat — lazyrhythm 設計系統 tokens v1（Nord × Brutalism），工具介面 STRUCTURE 6 / MOTION 3。
+     與 LazyEmbed 其他頁面共用同一組值；每個文字色在 bg／bg2／bg3 三層上都 ≥ 4.5:1。
+     Nord 原色負責「被看見」（填色、邊框、圓點），*-ink 負責「被讀懂」（文字）。 */
+  --bg:          #2e3440; /* polar0：頁面底 */
+  --bg2:         #3b4252; /* polar1：卡片、面板、輸入框 */
+  --bg3:         #434c5e; /* polar2：標題欄、hover、選中 */
+  --bg4:         #434c5e; /* polar2：chip 與狀態區塊底 */
+  --inset:       #272c36; /* 內凹的槽：程式碼區塊、進度條軌道 */
+  --border:      #4c566a; /* polar3：裝飾性結構邊框 */
+  --border2:     #919bb1; /* 控制項外框：bg／bg2／bg3 三層都 ≥ 3:1 */
+  --text-strong: #eceff4;
+  --text:        #d8dee9;
+  --text2:       #b8bdc8; /* dim-ink：輔助文字 */
+  --text3:       #b8bdc8;
+  --accent:      #88c0d0; /* frost1：主按鈕底、邊條、focus */
+  --accent2:     #8fbcbb; /* frost0：主按鈕 hover */
+  --accent-text: #93c6d4; /* frost-ink：強調文字與連結 */
+  --accent-ink:  #2e3440; /* 疊在 accent 上的字：6.24:1 */
+  --accent-bg:   #434c5e; /* 選中狀態底：sunken，不用半透明藍 */
+  --shadow-offset: #5e81ac;
+  --success:     #a3be8c;
+  --ok:          #a3be8c;
+  --ok-ink:      #b0cb98;
+  --ok-bg:       #434c5e;
+  --warning:     #ebcb8b;
+  --warn:        #ebcb8b;
+  --warn-ink:    #ebcb8b;
+  --warn-bg:     #434c5e;
+  --caution:     #d08770;
+  --caution-ink: #f3ae95;
+  --danger:      #bf616a;
+  --err:         #bf616a;
+  --err-ink:     #f4abb2;
+  --err-bg:      #434c5e;
+  --danger-fill: #a54049;
+  --danger-fill-hover: #8f3a42;
+  --special:     #b48ead;
+  --special-ink: #d9b2d3;
+  --key-c:       #93c6d4;
+  --str-c:       #b0cb98;
+  --num-c:       #d9b2d3;
+  --bool-c:      #f3ae95;
+  --null-c:      #b8bdc8;
+  --hl-bg:       #434c5e;
+  --hl-active:   #4c566a;
+  --hl-border:   #88c0d0;
+  --mono:        'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Noto Sans Mono CJK TC', monospace;
+  --sans:        system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+  --radius:      0;
+  --radius-sm:   0;
+  --offset:      3px;
+  --shadow:      3px 3px 0 0 #5e81ac;
+  --shadow-lg:   4px 4px 0 0 #5e81ac;
+  --shadow-ghost: 3px 3px 0 0 #4c566a;
+  --scrim:       rgba(0,0,0,.55);
+  color-scheme: dark;
   }
 
   html, body {
@@ -33,9 +71,10 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.65;
   }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ── Header ─────────────────────────────────── */
   .header {
@@ -43,8 +82,8 @@
     align-items: center;
     gap: 12px;
     padding: 0 24px;
-    height: 52px;
-    border-bottom: 1px solid var(--border);
+    height: 56px;
+    border-bottom: 2px solid var(--border);
     background: var(--bg2);
     position: sticky;
     top: 0;
@@ -54,75 +93,78 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: .02em;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text-strong);
+    letter-spacing: -.5px;
     text-decoration: none;
   }
+  /* Offbeat mark：一個方塊從自己的陰影錯開 */
   .logo-icon {
-    width: 28px; height: 28px;
-    background: linear-gradient(135deg, #3b82f6, #6366f1);
-    border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff;
+    width: 24px; height: 24px;
+    background: var(--bg);
+    border: 3px solid var(--accent);
+    box-shadow: 3px 3px 0 0 var(--shadow-offset);
     flex-shrink: 0;
+    font-size: 0;
   }
   .logo-sub {
+    font-family: var(--mono);
     font-size: 10px;
-    font-weight: 400;
-    color: var(--text3);
-    font-family: var(--sans);
-    letter-spacing: 0;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
     margin-left: 2px;
   }
   .spacer { flex: 1; }
   .header-meta {
-    font-size: 11px;
-    color: var(--text3);
     font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
   }
 
   /* ── Hero ────────────────────────────────────── */
   .hero {
     padding: 56px 24px 40px;
-    max-width: 860px;
+    max-width: 900px;
     margin: 0 auto;
   }
   .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .12em;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .16em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--text2);
     margin-bottom: 14px;
   }
+  .hero-eyebrow::before { content: ''; width: 8px; height: 8px; background: var(--success); }
   .hero-title {
-    font-size: clamp(26px, 4vw, 38px);
-    font-weight: 600;
-    line-height: 1.25;
-    color: var(--text);
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--text-strong);
     margin-bottom: 14px;
-    letter-spacing: -.01em;
+    letter-spacing: -.5px;
   }
-  .hero-title span {
-    background: linear-gradient(90deg, #3b82f6, #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+  .hero-title span { color: var(--accent-text); }
   .hero-desc {
     font-size: 15px;
     color: var(--text2);
-    max-width: 520px;
-    line-height: 1.7;
+    max-width: 560px;
   }
 
   /* ── Section ─────────────────────────────────── */
   .section {
-    max-width: 860px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 0 24px 64px;
   }
@@ -133,16 +175,19 @@
     margin-bottom: 20px;
   }
   .section-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .1em;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--text3);
+    color: var(--text2);
   }
   .section-count {
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--text3);
+    font-weight: 700;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
   }
   .divider {
     flex: 1;
@@ -154,63 +199,56 @@
   .tool-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
+    gap: 20px;
+    /* 偏移陰影畫在外框外面，右側與底部要留空間才不會被裁 */
+    padding: 0 3px 3px 0;
   }
 
   .tool-card {
     display: flex;
     flex-direction: column;
     background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
+    border: 2px solid var(--border);
+    border-top: 4px solid var(--card-accent, var(--accent));
+    box-shadow: var(--shadow);
+    padding: 16px;
     text-decoration: none;
     color: inherit;
-    transition: border-color .18s, background .18s, transform .18s;
-    position: relative;
-    overflow: hidden;
+    transition: background-color 150ms cubic-bezier(.2,0,.2,1), transform 90ms cubic-bezier(.2,0,.2,1), box-shadow 90ms cubic-bezier(.2,0,.2,1);
   }
-  .tool-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--card-tint, rgba(59,130,246,.04)), transparent 60%);
-    pointer-events: none;
-  }
-  .tool-card:hover {
-    border-color: var(--card-accent, var(--accent));
-    background: var(--bg3);
-    transform: translateY(-2px);
-  }
+  .tool-card:hover { background: var(--bg3); }
+  .tool-card:active { transform: translate(3px, 3px); box-shadow: none; }
 
   .card-icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    background: var(--card-icon-bg, var(--accent-bg));
-    border: 1px solid var(--card-icon-border, rgba(59,130,246,.2));
+    width: 40px; height: 40px;
+    background: var(--bg3);
+    border: 2px solid var(--card-accent, var(--accent));
     display: flex; align-items: center; justify-content: center;
-    font-size: 17px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--card-ink, var(--accent-text));
     margin-bottom: 14px;
     flex-shrink: 0;
   }
   .card-tag {
     font-family: var(--mono);
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: .1em;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--card-accent, var(--accent));
+    color: var(--card-ink, var(--accent-text));
     margin-bottom: 6px;
   }
   .card-title {
     font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 700;
+    color: var(--text-strong);
     margin-bottom: 8px;
-    line-height: 1.3;
+    line-height: 1.25;
   }
   .card-desc {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text2);
     line-height: 1.65;
     flex: 1;
@@ -219,41 +257,41 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 18px;
-    padding-top: 14px;
+    margin-top: 16px;
+    padding-top: 12px;
     border-top: 1px solid var(--border);
   }
   .card-features {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
   }
   .feat-chip {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: var(--bg4);
-    color: var(--text3);
-    border: 1px solid var(--border);
     font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    background: var(--bg4);
+    color: var(--text);
+    border: 1px solid var(--border);
   }
   .card-arrow {
+    font-family: var(--mono);
     font-size: 13px;
-    color: var(--text3);
-    transition: color .15s, transform .15s;
+    font-weight: 700;
+    color: var(--text2);
   }
-  .tool-card:hover .card-arrow {
-    color: var(--card-accent, var(--accent));
-    transform: translateX(3px);
-  }
+  .tool-card:hover .card-arrow { color: var(--card-ink, var(--accent-text)); }
 
-  /* card colour themes */
-  .theme-blue  { --card-accent: #3b82f6; --card-tint: rgba(59,130,246,.05);  --card-icon-bg: rgba(59,130,246,.1);  --card-icon-border: rgba(59,130,246,.2); }
-  .theme-indigo{ --card-accent: #818cf8; --card-tint: rgba(129,140,248,.05); --card-icon-bg: rgba(129,140,248,.1); --card-icon-border: rgba(129,140,248,.2); }
-  .theme-green { --card-accent: #22c55e; --card-tint: rgba(34,197,94,.05);   --card-icon-bg: rgba(34,197,94,.1);   --card-icon-border: rgba(34,197,94,.2); }
-  .theme-amber { --card-accent: #f59e0b; --card-tint: rgba(245,158,11,.05);  --card-icon-bg: rgba(245,158,11,.1);  --card-icon-border: rgba(245,158,11,.2); }
-  .theme-rose  { --card-accent: #f87171; --card-tint: rgba(248,113,113,.05); --card-icon-bg: rgba(248,113,113,.1); --card-icon-border: rgba(248,113,113,.2); }
-  .theme-cyan  { --card-accent: #22d3ee; --card-tint: rgba(34,211,238,.05);  --card-icon-bg: rgba(34,211,238,.1);  --card-icon-border: rgba(34,211,238,.2); }
+  /* 分類色：Nord 原色畫頂邊與圖示框，字用對應的 *-ink */
+  .theme-blue   { --card-accent: #88c0d0; --card-ink: #93c6d4; }
+  .theme-indigo { --card-accent: #81a1c1; --card-ink: #93c6d4; }
+  .theme-green  { --card-accent: #a3be8c; --card-ink: #b0cb98; }
+  .theme-amber  { --card-accent: #ebcb8b; --card-ink: #ebcb8b; }
+  .theme-rose   { --card-accent: #b48ead; --card-ink: #d9b2d3; }
+  .theme-cyan   { --card-accent: #8fbcbb; --card-ink: #93c6d4; }
+
+  @media (prefers-reduced-motion: reduce) { .tool-card:active { transform: none; } }
 
   /* ── Example cards (dimmed) ─────────────────── */
   .tool-card.example {
@@ -264,12 +302,12 @@
   .tool-card.example:hover { transform: none; }
   .example-label {
     font-size: 9px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
     color: var(--text3);
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 0;
     padding: 1px 6px;
     margin-left: auto;
   }
@@ -296,7 +334,7 @@
 
 <header class="header">
   <a class="logo" href="index.html">
-    <div class="logo-icon">LE</div>
+    <div class="logo-icon" aria-hidden="true">LE</div>
     LazyEmbed
     <span class="logo-sub">小工具集</span>
   </a>
@@ -389,7 +427,7 @@
   <div class="tool-grid" id="devGrid">
 
     <a class="tool-card theme-rose" href="widgets/image-converter.html">
-      <div class="card-icon">🖼</div>
+      <div class="card-icon">IMG</div>
       <div class="card-tag">IMAGE · WEBP / AVIF</div>
       <div class="card-title">圖片轉換器</div>
       <div class="card-desc">純前端裁切、壓縮並轉成 WebP / AVIF 等網頁友善格式。支援批次處理、即時預覽檔案大小，圖片不離開瀏覽器。</div>
@@ -404,7 +442,7 @@
     </a>
 
     <a class="tool-card theme-green" href="widgets/password-generator.html">
-      <div class="card-icon">🔑</div>
+      <div class="card-icon">KEY</div>
       <div class="card-tag">SECURITY</div>
       <div class="card-title">密碼與金鑰產生器</div>
       <div class="card-desc">以 crypto 安全亂數產生高強度密碼，並一鍵生成 UUID v4、Base64 / Hex 金鑰，適合設定 JWT Secret 等環境變數。</div>
@@ -419,7 +457,7 @@
     </a>
 
     <a class="tool-card theme-cyan" href="widgets/web-inspector.html">
-      <div class="card-icon">🌐</div>
+      <div class="card-icon">WEB</div>
       <div class="card-tag">DNS · SEO · OG</div>
       <div class="card-title">網頁檢查工具</div>
       <div class="card-desc">查詢 DNS 紀錄（DNS-over-HTTPS）、解析 Meta / Open Graph 標籤，並模擬 Twitter 與 Facebook 分享卡片的預覽畫面。</div>
@@ -445,7 +483,7 @@
   <div class="tool-grid">
 
     <a class="tool-card theme-amber example" href="widgets/example-clock.html">
-      <div class="card-icon">🕐</div>
+      <div class="card-icon">CLK</div>
       <div class="card-tag">DEMO</div>
       <div class="card-title">時鐘</div>
       <div class="card-desc">即時顯示目前時間的時鐘小工具範例。</div>
@@ -467,7 +505,7 @@
     </a>
 
     <a class="tool-card theme-rose example" href="widgets/example-weather.html">
-      <div class="card-icon">☁</div>
+      <div class="card-icon">WX</div>
       <div class="card-tag">DEMO</div>
       <div class="card-title">天氣查詢</div>
       <div class="card-desc">天氣資訊小工具範例，展示外部 API 資料整合。</div>

@@ -4,24 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>計數器小工具範例</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg:     #0d0f12;
-            --bg2:    #13161b;
-            --bg3:    #1a1e25;
-            --bg4:    #222730;
-            --border: #2a2f3a;
-            --border2:#333a47;
-            --text:   #cdd5e0;
-            --text2:  #7e8a9e;
-            --accent: #3b82f6;
-            --mono:   'JetBrains Mono', monospace;
-            --sans:   'IBM Plex Sans', system-ui, sans-serif;
+  /* Offbeat — lazyrhythm 設計系統 tokens v1（Nord × Brutalism），工具介面 STRUCTURE 6 / MOTION 3。
+     與 LazyEmbed 其他頁面共用同一組值；每個文字色在 bg／bg2／bg3 三層上都 ≥ 4.5:1。
+     Nord 原色負責「被看見」（填色、邊框、圓點），*-ink 負責「被讀懂」（文字）。 */
+  --bg:          #2e3440; /* polar0：頁面底 */
+  --bg2:         #3b4252; /* polar1：卡片、面板、輸入框 */
+  --bg3:         #434c5e; /* polar2：標題欄、hover、選中 */
+  --bg4:         #434c5e; /* polar2：chip 與狀態區塊底 */
+  --inset:       #272c36; /* 內凹的槽：程式碼區塊、進度條軌道 */
+  --border:      #4c566a; /* polar3：裝飾性結構邊框 */
+  --border2:     #919bb1; /* 控制項外框：bg／bg2／bg3 三層都 ≥ 3:1 */
+  --text-strong: #eceff4;
+  --text:        #d8dee9;
+  --text2:       #b8bdc8; /* dim-ink：輔助文字 */
+  --text3:       #b8bdc8;
+  --accent:      #88c0d0; /* frost1：主按鈕底、邊條、focus */
+  --accent2:     #8fbcbb; /* frost0：主按鈕 hover */
+  --accent-text: #93c6d4; /* frost-ink：強調文字與連結 */
+  --accent-ink:  #2e3440; /* 疊在 accent 上的字：6.24:1 */
+  --accent-bg:   #434c5e; /* 選中狀態底：sunken，不用半透明藍 */
+  --shadow-offset: #5e81ac;
+  --success:     #a3be8c;
+  --ok:          #a3be8c;
+  --ok-ink:      #b0cb98;
+  --ok-bg:       #434c5e;
+  --warning:     #ebcb8b;
+  --warn:        #ebcb8b;
+  --warn-ink:    #ebcb8b;
+  --warn-bg:     #434c5e;
+  --caution:     #d08770;
+  --caution-ink: #f3ae95;
+  --danger:      #bf616a;
+  --err:         #bf616a;
+  --err-ink:     #f4abb2;
+  --err-bg:      #434c5e;
+  --danger-fill: #a54049;
+  --danger-fill-hover: #8f3a42;
+  --special:     #b48ead;
+  --special-ink: #d9b2d3;
+  --key-c:       #93c6d4;
+  --str-c:       #b0cb98;
+  --num-c:       #d9b2d3;
+  --bool-c:      #f3ae95;
+  --null-c:      #b8bdc8;
+  --hl-bg:       #434c5e;
+  --hl-active:   #4c566a;
+  --hl-border:   #88c0d0;
+  --mono:        'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Noto Sans Mono CJK TC', monospace;
+  --sans:        system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+  --radius:      0;
+  --radius-sm:   0;
+  --offset:      3px;
+  --shadow:      3px 3px 0 0 #5e81ac;
+  --shadow-lg:   4px 4px 0 0 #5e81ac;
+  --shadow-ghost: 3px 3px 0 0 #4c566a;
+  --scrim:       rgba(0,0,0,.55);
+  color-scheme: dark;
         }
 
         body {
@@ -39,7 +81,7 @@
             background: var(--bg2);
             border: 1px solid var(--border);
             padding: 3rem;
-            border-radius: 14px;
+            border-radius: 0;
             text-align: center;
             min-width: 320px;
         }
@@ -47,24 +89,24 @@
         .counter-title {
             font-family: var(--mono);
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: .12em;
             text-transform: uppercase;
-            color: var(--accent);
+            color: var(--accent-text);
             margin-bottom: 2rem;
         }
 
         .counter-display {
             font-family: var(--mono);
             font-size: 5rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text);
             margin-bottom: 2rem;
             font-variant-numeric: tabular-nums;
             padding: 1.5rem;
             background: var(--bg3);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 0;
             letter-spacing: .04em;
         }
 
@@ -80,7 +122,7 @@
             font-size: 1.5rem;
             font-weight: 600;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0;
             cursor: pointer;
             transition: all 0.18s ease;
             background: var(--bg3);
@@ -100,39 +142,39 @@
         }
 
         .btn-increment {
-            background: rgba(34,197,94,.12);
-            color: #4ade80;
-            border-color: rgba(34,197,94,.3);
+            background: #434c5e;
+            color: #b0cb98;
+            border-color: #a3be8c;
             min-width: 80px;
         }
 
         .btn-increment:hover {
-            background: rgba(34,197,94,.22);
+            background: #434c5e;
         }
 
         .btn-decrement {
-            background: rgba(239,68,68,.12);
-            color: #f87171;
-            border-color: rgba(239,68,68,.3);
+            background: #434c5e;
+            color: #f4abb2;
+            border-color: #bf616a;
             min-width: 80px;
         }
 
         .btn-decrement:hover {
-            background: rgba(239,68,68,.22);
+            background: #434c5e;
         }
 
         .btn-reset {
             width: 100%;
-            background: rgba(59,130,246,.12);
-            color: #60a5fa;
-            border-color: rgba(59,130,246,.3);
+            background: #434c5e;
+            color: #93c6d4;
+            border-color: #88c0d0;
             font-size: 1rem;
             font-weight: 500;
             padding: 0.75rem;
         }
 
         .btn-reset:hover {
-            background: rgba(59,130,246,.22);
+            background: #434c5e;
         }
     </style>
 </head>

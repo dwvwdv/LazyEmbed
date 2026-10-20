@@ -157,18 +157,16 @@ LazyEmbed 是完全靜態的專案，可以部署到多種平台：
 
 📖 **其他平台部署指南請參閱**：[部署文檔](docs/deployment.md)
 
-## 自訂樣式
+## 外觀：Offbeat 設計語言
 
-您可以編輯 `css/style.css` 來自訂介面外觀。主要的 CSS 變數位於檔案頂部：
+所有頁面（`index.html` 與 `widgets/` 底下的每一個工具）都採用 lazyrhythm 的 **Offbeat** 設計系統（Nord × Brutalism，tokens v1），
+與 Driftread、Lazyrhythm、WorldPane、無感記帳共用同一組色值。工具介面的旋鈕是 `STRUCTURE 6 / MOTION 3`。
 
-```css
-:root {
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --secondary-color: #6b7280;
-    /* ... 更多變數 */
-}
-```
+- 每個頁面維持單一 HTML 檔，`:root` 帶同一組 token；新增工具時直接複製既有頁面的 `:root` 區塊，不要自己調色
+- 底色 `--bg`／`--bg2`／`--bg3` 是 Nord polar0／polar1／polar2；文字用 `--text`、`--text2`（dim-ink）、`--accent-text`、`--ok-ink`／`--err-ink` 等文字 token，三層底色上都 ≥ 4.5:1
+- Nord 原色（`--accent`、`--ok`、`--err`…）只畫填色、邊框、圓點與偏移陰影；疊在 `--accent` 上的字用 `--accent-ink`（polar0）
+- 直角（`--radius` 0）、2px 邊框、無模糊的實色偏移陰影（`--shadow`）；不用漸層、不用半透明灰陰影
+- 字族先列拉丁字型、後列 CJK，**不載入任何 webfont**；介面不使用 emoji 當圖示
 
 ## 瀏覽器支援
 

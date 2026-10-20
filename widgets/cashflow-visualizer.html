@@ -5,31 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>資金流可視化</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg:        #0d0f12;
-            --bg2:       #13161b;
-            --bg3:       #1a1e25;
-            --bg4:       #222730;
-            --border:    #2a2f3a;
-            --border2:   #333a47;
-            --text:      #cdd5e0;
-            --text2:     #7e8a9e;
-            --text3:     #4a5568;
-            --accent:    #3b82f6;
-            --accent-bg: rgba(59,130,246,.10);
-            --success:   #22c55e;
-            --danger:    #ef4444;
-            --warning:   #f59e0b;
-            --mono:      'JetBrains Mono', 'Courier New', monospace;
-            --sans:      'IBM Plex Sans', system-ui, sans-serif;
-            --radius:    10px;
-            --radius-sm: 6px;
+  /* Offbeat — lazyrhythm 設計系統 tokens v1（Nord × Brutalism），工具介面 STRUCTURE 6 / MOTION 3。
+     與 LazyEmbed 其他頁面共用同一組值；每個文字色在 bg／bg2／bg3 三層上都 ≥ 4.5:1。
+     Nord 原色負責「被看見」（填色、邊框、圓點），*-ink 負責「被讀懂」（文字）。 */
+  --bg:          #2e3440; /* polar0：頁面底 */
+  --bg2:         #3b4252; /* polar1：卡片、面板、輸入框 */
+  --bg3:         #434c5e; /* polar2：標題欄、hover、選中 */
+  --bg4:         #434c5e; /* polar2：chip 與狀態區塊底 */
+  --inset:       #272c36; /* 內凹的槽：程式碼區塊、進度條軌道 */
+  --border:      #4c566a; /* polar3：裝飾性結構邊框 */
+  --border2:     #919bb1; /* 控制項外框：bg／bg2／bg3 三層都 ≥ 3:1 */
+  --text-strong: #eceff4;
+  --text:        #d8dee9;
+  --text2:       #b8bdc8; /* dim-ink：輔助文字 */
+  --text3:       #b8bdc8;
+  --accent:      #88c0d0; /* frost1：主按鈕底、邊條、focus */
+  --accent2:     #8fbcbb; /* frost0：主按鈕 hover */
+  --accent-text: #93c6d4; /* frost-ink：強調文字與連結 */
+  --accent-ink:  #2e3440; /* 疊在 accent 上的字：6.24:1 */
+  --accent-bg:   #434c5e; /* 選中狀態底：sunken，不用半透明藍 */
+  --shadow-offset: #5e81ac;
+  --success:     #a3be8c;
+  --ok:          #a3be8c;
+  --ok-ink:      #b0cb98;
+  --ok-bg:       #434c5e;
+  --warning:     #ebcb8b;
+  --warn:        #ebcb8b;
+  --warn-ink:    #ebcb8b;
+  --warn-bg:     #434c5e;
+  --caution:     #d08770;
+  --caution-ink: #f3ae95;
+  --danger:      #bf616a;
+  --err:         #bf616a;
+  --err-ink:     #f4abb2;
+  --err-bg:      #434c5e;
+  --danger-fill: #a54049;
+  --danger-fill-hover: #8f3a42;
+  --special:     #b48ead;
+  --special-ink: #d9b2d3;
+  --key-c:       #93c6d4;
+  --str-c:       #b0cb98;
+  --num-c:       #d9b2d3;
+  --bool-c:      #f3ae95;
+  --null-c:      #b8bdc8;
+  --hl-bg:       #434c5e;
+  --hl-active:   #4c566a;
+  --hl-border:   #88c0d0;
+  --mono:        'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Noto Sans Mono CJK TC', monospace;
+  --sans:        system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+  --radius:      0;
+  --radius-sm:   0;
+  --offset:      3px;
+  --shadow:      3px 3px 0 0 #5e81ac;
+  --shadow-lg:   4px 4px 0 0 #5e81ac;
+  --shadow-ghost: 3px 3px 0 0 #4c566a;
+  --scrim:       rgba(0,0,0,.55);
+  color-scheme: dark;
         }
 
         body {
@@ -139,7 +174,7 @@
         .form-row input:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-bg);
+            box-shadow: 0 0 0 2px var(--accent);
         }
 
         .form-row select:hover,
@@ -150,9 +185,9 @@
         .btn-remove {
             width: 32px;
             height: 32px;
-            background: rgba(239,68,68,.12);
-            color: #f87171;
-            border: 1px solid rgba(239,68,68,.3);
+            background: #434c5e;
+            color: #f4abb2;
+            border: 1px solid #bf616a;
             border-radius: 50%;
             cursor: pointer;
             font-size: 16px;
@@ -163,8 +198,8 @@
         }
 
         .btn-remove:hover {
-            background: rgba(239,68,68,.22);
-            border-color: rgba(239,68,68,.5);
+            background: #434c5e;
+            border-color: #bf616a;
             transform: scale(1.08);
         }
 
@@ -175,7 +210,7 @@
         .btn-add {
             padding: 10px 20px;
             background: var(--bg4);
-            color: var(--accent);
+            color: var(--accent-text);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             cursor: pointer;
@@ -198,8 +233,8 @@
         .btn-generate {
             padding: 11px 24px;
             background: var(--accent);
-            color: white;
-            border: none;
+            color: var(--accent-ink);
+            border: 2px solid var(--accent2);
             border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 14px;
@@ -208,10 +243,11 @@
             margin-top: 10px;
             transition: all 0.18s ease;
             font-family: var(--sans);
-        }
+    box-shadow: var(--shadow);
+}
 
         .btn-generate:hover {
-            background: #2563eb;
+            background: #8fbcbb;
             transform: translateY(-1px);
         }
 
@@ -273,11 +309,11 @@
         }
 
         .calc-item.income .calc-value {
-            color: #4ade80;
+            color: #b0cb98;
         }
 
         .calc-item.expense .calc-value {
-            color: #f87171;
+            color: #f4abb2;
         }
 
         .calc-item.remaining {
@@ -286,7 +322,7 @@
         }
 
         .calc-item.remaining .calc-value {
-            color: #fbbf24;
+            color: #ebcb8b;
         }
 
         .calc-label {
@@ -426,7 +462,7 @@
             .form-section,
             .summary-section {
                 padding: 12px;
-                border-radius: 8px;
+                border-radius: 0;
             }
 
             .form-section h2,
@@ -535,14 +571,14 @@
                     </div>
                     <button class="btn-add" onclick="addRow()">+ 新增項目</button>
                     <button class="btn-generate" onclick="generateChart()">生成圖表</button>
-                    <button class="btn-generate" onclick="copyEmbedUrl()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-top: 8px;">📋 複製嵌入連結</button>
+                    <button class="btn-generate" onclick="copyEmbedUrl()" style="margin-top: 8px; background: var(--bg2); color: var(--text); border-color: var(--border2); box-shadow: var(--shadow-ghost);">複製嵌入連結</button>
                 </div>
 
                 <!-- 資料列表與計算結果 -->
                 <div class="summary-section">
                     <h2>資料摘要</h2>
                     <div class="data-list" id="dataList">
-                        <div style="color: #9ca3af; text-align: center;">請輸入資料並生成圖表</div>
+                        <div style="color: #b8bdc8; text-align: center;">請輸入資料並生成圖表</div>
                     </div>
                     <div class="calculations" id="calculations">
                         <!-- 計算結果 -->
@@ -676,7 +712,7 @@
                 html += `<div class="data-list-item">費用,${item.name},${item.amount}</div>`;
             });
 
-            dataList.innerHTML = html || '<div style="color: #9ca3af;">無資料</div>';
+            dataList.innerHTML = html || '<div style="color: #b8bdc8;">無資料</div>';
         }
 
         // 更新計算結果
@@ -707,22 +743,22 @@
                 chart.destroy();
             }
 
-            // 費用細項顏色（紅色系）
+            // 費用細項顏色（Offbeat：Aurora 暖色系）
             const expenseColors = [
-                'rgba(239, 68, 68, 0.8)',
-                'rgba(220, 38, 38, 0.8)',
-                'rgba(185, 28, 28, 0.8)',
-                'rgba(153, 27, 27, 0.8)',
-                'rgba(127, 29, 29, 0.8)'
+                '#bf616a',
+                '#d08770',
+                '#b48ead',
+                '#a54049',
+                '#8f3a42'
             ];
 
-            // 收入細項顏色（綠色系）
+            // 收入細項顏色（Offbeat：Aurora green ＋ Frost）
             const incomeColors = [
-                'rgba(16, 185, 129, 0.9)',
-                'rgba(5, 150, 105, 0.9)',
-                'rgba(4, 120, 87, 0.9)',
-                'rgba(6, 95, 70, 0.9)',
-                'rgba(6, 78, 59, 0.9)'
+                '#a3be8c',
+                '#8fbcbb',
+                '#88c0d0',
+                '#81a1c1',
+                '#5e81ac'
             ];
 
             // 準備內圈資料（費用細項 + 剩餘可支配金額）
@@ -742,7 +778,7 @@
             if (remaining > 0) {
                 innerData.push(remaining);
                 innerLabels.push(`剩餘 ${(remaining / totalIncome * 100).toFixed(1)}%`);
-                innerColors.push('rgba(245, 158, 11, 0.8)');
+                innerColors.push('#ebcb8b');
             }
 
             // 準備外圈資料（收入細項）
@@ -768,14 +804,14 @@
                             data: outerData,
                             backgroundColor: outerColors,
                             borderWidth: 2,
-                            borderColor: '#fff'
+                            borderColor: '#3b4252'
                         },
                         {
                             label: '內圈 - 支出分配',
                             data: innerData,
                             backgroundColor: innerColors,
                             borderWidth: 2,
-                            borderColor: '#fff'
+                            borderColor: '#3b4252'
                         }
                     ]
                 },
@@ -799,6 +835,7 @@
                                         labels.push({
                                             text: outerLabels[i],
                                             fillStyle: outerColors[i],
+                                            fontColor: '#d8dee9',
                                             hidden: false,
                                             index: i,
                                             datasetIndex: 0
@@ -810,6 +847,7 @@
                                         labels.push({
                                             text: innerLabels[i],
                                             fillStyle: innerColors[i],
+                                            fontColor: '#d8dee9',
                                             hidden: false,
                                             index: i,
                                             datasetIndex: 1

@@ -4,42 +4,66 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JSON Filter — 屬性篩選工具</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #0d0f12;
-    --bg2:       #13161b;
-    --bg3:       #1a1e25;
-    --bg4:       #222730;
-    --border:    #2a2f3a;
-    --border2:   #333a47;
-    --text:      #cdd5e0;
-    --text2:     #7e8a9e;
-    --text3:     #4a5568;
-    --accent:    #3b82f6;
-    --accent2:   #1d4ed8;
-    --accent-bg: rgba(59,130,246,.10);
-    --warn:      #f59e0b;
-    --warn-bg:   rgba(245,158,11,.10);
-    --ok:        #22c55e;
-    --err:       #f87171;
-    --err-bg:    rgba(248,113,113,.08);
-    --null-c:    #4a5568;
-    --bool-c:    #fb923c;
-    --num-c:     #4ade80;
-    --str-c:     #f472b6;
-    --key-c:     #60a5fa;
-    --hl-bg:     rgba(59,130,246,.08);
-    --hl-active: rgba(59,130,246,.18);
-    --hl-border: #3b82f6;
-    --radius:    6px;
-    --radius-sm: 4px;
-    --mono:      'JetBrains Mono', 'Fira Code', monospace;
-    --sans:      'IBM Plex Sans', system-ui, sans-serif;
+  /* Offbeat — lazyrhythm 設計系統 tokens v1（Nord × Brutalism），工具介面 STRUCTURE 6 / MOTION 3。
+     與 LazyEmbed 其他頁面共用同一組值；每個文字色在 bg／bg2／bg3 三層上都 ≥ 4.5:1。
+     Nord 原色負責「被看見」（填色、邊框、圓點），*-ink 負責「被讀懂」（文字）。 */
+  --bg:          #2e3440; /* polar0：頁面底 */
+  --bg2:         #3b4252; /* polar1：卡片、面板、輸入框 */
+  --bg3:         #434c5e; /* polar2：標題欄、hover、選中 */
+  --bg4:         #434c5e; /* polar2：chip 與狀態區塊底 */
+  --inset:       #272c36; /* 內凹的槽：程式碼區塊、進度條軌道 */
+  --border:      #4c566a; /* polar3：裝飾性結構邊框 */
+  --border2:     #919bb1; /* 控制項外框：bg／bg2／bg3 三層都 ≥ 3:1 */
+  --text-strong: #eceff4;
+  --text:        #d8dee9;
+  --text2:       #b8bdc8; /* dim-ink：輔助文字 */
+  --text3:       #b8bdc8;
+  --accent:      #88c0d0; /* frost1：主按鈕底、邊條、focus */
+  --accent2:     #8fbcbb; /* frost0：主按鈕 hover */
+  --accent-text: #93c6d4; /* frost-ink：強調文字與連結 */
+  --accent-ink:  #2e3440; /* 疊在 accent 上的字：6.24:1 */
+  --accent-bg:   #434c5e; /* 選中狀態底：sunken，不用半透明藍 */
+  --shadow-offset: #5e81ac;
+  --success:     #a3be8c;
+  --ok:          #a3be8c;
+  --ok-ink:      #b0cb98;
+  --ok-bg:       #434c5e;
+  --warning:     #ebcb8b;
+  --warn:        #ebcb8b;
+  --warn-ink:    #ebcb8b;
+  --warn-bg:     #434c5e;
+  --caution:     #d08770;
+  --caution-ink: #f3ae95;
+  --danger:      #bf616a;
+  --err:         #bf616a;
+  --err-ink:     #f4abb2;
+  --err-bg:      #434c5e;
+  --danger-fill: #a54049;
+  --danger-fill-hover: #8f3a42;
+  --special:     #b48ead;
+  --special-ink: #d9b2d3;
+  --key-c:       #93c6d4;
+  --str-c:       #b0cb98;
+  --num-c:       #d9b2d3;
+  --bool-c:      #f3ae95;
+  --null-c:      #b8bdc8;
+  --hl-bg:       #434c5e;
+  --hl-active:   #4c566a;
+  --hl-border:   #88c0d0;
+  --mono:        'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Noto Sans Mono CJK TC', monospace;
+  --sans:        system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+  --radius:      0;
+  --radius-sm:   0;
+  --offset:      3px;
+  --shadow:      3px 3px 0 0 #5e81ac;
+  --shadow-lg:   4px 4px 0 0 #5e81ac;
+  --shadow-ghost: 3px 3px 0 0 #4c566a;
+  --scrim:       rgba(0,0,0,.55);
+  color-scheme: dark;
   }
 
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
@@ -78,7 +102,7 @@
     transition: all .15s;
     flex-shrink: 0;
   }
-  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent-text); }
   .sep { color: var(--text3); font-size: 11px; }
   .logo {
     display: flex;
@@ -86,27 +110,27 @@
     gap: 8px;
     font-family: var(--mono);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text);
     letter-spacing: .02em;
   }
   .logo-icon {
     width: 22px; height: 22px;
     background: var(--accent);
-    border-radius: 5px;
+    border-radius: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #fff;
+    font-size: 11px; font-weight: 700; color: var(--accent-ink);
     flex-shrink: 0;
   }
   .badge {
     font-family: var(--mono);
     font-size: 10px;
     padding: 2px 8px;
-    border-radius: 10px;
+    border-radius: 0;
     background: var(--accent-bg);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 500;
-    border: 1px solid rgba(59,130,246,.2);
+    border: 1px solid #88c0d0;
   }
   .spacer { flex: 1; }
   .hbtn {
@@ -120,8 +144,8 @@
     cursor: pointer;
     transition: all .15s;
   }
-  .hbtn:hover { border-color: var(--accent); color: var(--accent); }
-  .hbtn.danger:hover { border-color: var(--err); color: var(--err); }
+  .hbtn:hover { border-color: var(--accent); color: var(--accent-text); }
+  .hbtn.danger:hover { border-color: var(--err); color: var(--err-ink); }
 
   /* ── Sidebar ─────────────────────────────────── */
   .sidebar {
@@ -154,12 +178,12 @@
   .key-list { flex: 1; overflow-y: auto; padding-bottom: 12px; }
   .key-list::-webkit-scrollbar { width: 4px; }
   .key-list::-webkit-scrollbar-track { background: transparent; }
-  .key-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .key-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 0; }
 
   .sec-head {
     padding: 10px 12px 3px;
     font-size: 9px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
     color: var(--text3);
@@ -211,7 +235,7 @@
   .auto-box {
     width: 13px; height: 13px;
     border: 1px solid var(--border2);
-    border-radius: 3px;
+    border-radius: 0;
     background: var(--bg4);
     flex-shrink: 0;
   }
@@ -227,7 +251,7 @@
   .parent-tag {
     font-size: 9px;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: 0;
     background: var(--bg4);
     color: var(--text3);
     border: 1px solid var(--border);
@@ -241,7 +265,7 @@
     border: none;
     cursor: pointer;
     padding: 2px 4px;
-    border-radius: 3px;
+    border-radius: 0;
     color: var(--text3);
     flex-shrink: 0;
     transition: all .15s;
@@ -251,7 +275,7 @@
   .pin-btn.active {
     color: var(--warn);
     background: var(--warn-bg);
-    border: 1px solid rgba(245,158,11,.25);
+    border: 1px solid #ebcb8b;
   }
 
   .no-match {
@@ -285,7 +309,7 @@
   .toggle-header:hover { background: var(--bg3); }
   .toggle-title {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
     color: var(--text2);
@@ -293,7 +317,7 @@
     align-items: center;
     gap: 8px;
   }
-  .toggle-title .sub { font-weight: 400; color: var(--text3); text-transform: none; letter-spacing: 0; }
+  .toggle-title .sub { font-weight: 700; color: var(--text3); text-transform: none; letter-spacing: 0; }
   .toggle-actions { display: flex; align-items: center; gap: 8px; }
   .tbtn {
     font-size: 10px;
@@ -306,7 +330,7 @@
     font-family: var(--sans);
     transition: all .15s;
   }
-  .tbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .tbtn:hover { border-color: var(--accent); color: var(--accent-text); }
   .chevron { font-size: 9px; color: var(--text3); transition: transform .2s; }
   .chevron.open { transform: rotate(180deg); }
 
@@ -329,9 +353,9 @@
     padding: 6px 14px;
     font-size: 11px;
     font-family: var(--mono);
-    color: var(--err);
+    color: var(--err-ink);
     background: var(--err-bg);
-    border-top: 1px solid rgba(248,113,113,.15);
+    border-top: 1px solid #bf616a;
     display: none;
   }
 
@@ -343,7 +367,7 @@
   }
   .output-scroll::-webkit-scrollbar { width: 4px; }
   .output-scroll::-webkit-scrollbar-track { background: transparent; }
-  .output-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .output-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 0; }
 
   .out-line {
     font-family: var(--mono);
@@ -373,12 +397,12 @@
   }
   .inspect-panel::-webkit-scrollbar { width: 4px; }
   .inspect-panel::-webkit-scrollbar-track { background: transparent; }
-  .inspect-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .inspect-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 0; }
 
   .inspect-header {
     padding: 8px 14px;
     font-size: 9px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
     color: var(--text3);
@@ -391,7 +415,7 @@
     align-items: center;
     gap: 8px;
   }
-  .inspect-hint { font-weight: 400; color: var(--text3); text-transform: none; letter-spacing: 0; font-size: 10px; }
+  .inspect-hint { font-weight: 700; color: var(--text3); text-transform: none; letter-spacing: 0; font-size: 10px; }
 
   .inspect-row {
     display: grid;
@@ -464,7 +488,7 @@
     display: flex; align-items: center; justify-content: center;
     transition: all .15s;
   }
-  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent-text); }
   .nav-counter {
     font-family: var(--mono);
     font-size: 10px;
@@ -484,7 +508,7 @@
     transition: all .15s;
     margin-top: 4px;
   }
-  .unpin-btn:hover { border-color: var(--err); color: var(--err); }
+  .unpin-btn:hover { border-color: var(--err); color: var(--err-ink); }
 
   /* ── Empty state ────────────────────────────── */
   .empty-state {
@@ -572,7 +596,7 @@
     <!-- Inspect -->
     <div class="inspect-panel" id="inspectPanel">
       <div class="inspect-header">
-        📌 值分析
+        值分析
         <span class="inspect-hint">點擊值格跳轉至輸出行</span>
       </div>
       <div id="inspectTable"></div>
@@ -580,8 +604,8 @@
 
     <!-- Empty state -->
     <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📋</div>
-      <p>貼入 JSON，勾選屬性，📌 釘選查看值分析</p>
+      <div class="empty-icon">~</div>
+      <p>貼入 JSON，勾選屬性，釘選查看值分析</p>
     </div>
 
   </main>
@@ -811,7 +835,7 @@ function updateKeyList() {
   }
   function pinB(k) {
     const on = pinnedKeys.has(k);
-    return `<button class="pin-btn${on?' active':''}" data-pin="${k}" title="${on?'取消值分析':'釘選值分析'}">📌</button>`;
+    return `<button class="pin-btn${on?' active':''}" data-pin="${k}" title="${on?'取消值分析':'釘選值分析'}">PIN</button>`;
   }
   function rowSel(k) {
     return `<div class="krow" data-toggle="${k}" data-val="false">
